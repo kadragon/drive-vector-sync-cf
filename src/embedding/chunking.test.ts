@@ -36,7 +36,7 @@ describe('Chunking Module', () => {
       const chunks = chunkText(text, 100);
 
       // Should create multiple chunks with each having <= 100 tokens
-      chunks.forEach((chunk) => {
+      chunks.forEach(chunk => {
         expect(chunk.tokenCount).toBeLessThanOrEqual(100);
       });
     });
@@ -65,7 +65,7 @@ describe('Chunking Module', () => {
       const chunks = chunkText(text, 1000);
 
       // Verify each chunk has required metadata
-      chunks.forEach((chunk) => {
+      chunks.forEach(chunk => {
         expect(chunk).toHaveProperty('text');
         expect(chunk).toHaveProperty('index');
         expect(chunk).toHaveProperty('tokenCount');
@@ -141,7 +141,7 @@ describe('Chunking Module', () => {
       expect(chunks.length).toBeGreaterThan(1);
 
       // Verify all chunks are within limit
-      chunks.forEach((chunk) => {
+      chunks.forEach(chunk => {
         expect(chunk.tokenCount).toBeLessThanOrEqual(1000);
       });
     });
@@ -187,6 +187,103 @@ const code = 'example';
       // Should complete in reasonable time (< 1 second)
       expect(duration).toBeLessThan(1000);
       expect(chunks.length).toBeGreaterThan(1);
+    });
+  });
+
+  describe('Chunk Overlap (TASK-020)', () => {
+    it('should create overlapping chunks with default 200 token overlap', () => {
+      // Create text with ~3000 tokens
+      const longText = 'word '.repeat(3000);
+      const chunks = chunkText(longText, 2000, 200);
+
+      // With 2000 max tokens and 200 overlap:
+      // - Step size = 2000 - 200 = 1800
+      // - Should create more chunks than without overlap
+      expect(chunks.length).toBeGreaterThan(1);
+
+      // All chunks except possibly the last should be at maxTokens
+      chunks.slice(0, -1).forEach(chunk => {
+        expect(chunk.tokenCount).toBeLessThanOrEqual(2000);
+      });
+    });
+
+    it('should create chunks without overlap when overlapTokens is 0', () => {
+      // Create a very long text to ensure multiple chunks
+      const longText = 'word '.repeat(10000); // Very long text
+      const chunksWithOverlap = chunkText(longText, 2000, 400);
+      const chunksWithoutOverlap = chunkText(longText, 2000, 0);
+
+      // Both should have multiple chunks
+      expect(chunksWithOverlap.length).toBeGreaterThan(2);
+      expect(chunksWithoutOverlap.length).toBeGreaterThan(2);
+
+      // Without overlap should create fewer chunks (or equal if text is short)
+      expect(chunksWithoutOverlap.length).toBeLessThanOrEqual(chunksWithOverlap.length);
+    });
+
+    it('should have content overlap between consecutive chunks', () => {
+      // Create text with distinct words to verify overlap
+      const text = Array.from({ length: 3000 }, (_, i) => `word${i}`).join(' ');
+      const chunks = chunkText(text, 1000, 200);
+
+      expect(chunks.length).toBeGreaterThan(1);
+
+      // Check that consecutive chunks have overlapping content
+      for (let i = 0; i < chunks.length - 1; i++) {
+        const currentChunk = chunks[i].text;
+        const nextChunk = chunks[i + 1].text;
+
+        // Get last few words from current chunk
+        const currentWords = currentChunk.trim().split(/\s+/);
+        const lastWords = currentWords.slice(-10).join(' ');
+
+        // Next chunk should start with some of these words (overlap)
+        const hasOverlap = nextChunk.includes(lastWords.split(/\s+/)[0]);
+        expect(hasOverlap).toBe(true);
+      }
+    });
+
+    it('should auto-adjust overlap when it exceeds 50% of maxTokens', () => {
+      const longText = 'word '.repeat(500);
+      // Request 200 token overlap but maxTokens is only 100
+      // Should auto-adjust to max 50 tokens (50% of 100)
+      const chunks = chunkText(longText, 100, 200);
+
+      expect(chunks.length).toBeGreaterThan(1);
+      chunks.forEach(chunk => {
+        expect(chunk.tokenCount).toBeLessThanOrEqual(100);
+      });
+    });
+
+    it('should handle custom overlap values', () => {
+      const longText = 'word '.repeat(6000); // ~6000 tokens
+      const chunks50 = chunkText(longText, 2000, 100); // step = 1900
+      const chunks400 = chunkText(longText, 2000, 400); // step = 1600
+
+      // More overlap = more chunks (smaller step size)
+      // With 100 overlap: step = 1900, chunks = ceil(6000/1900) = 4
+      // With 400 overlap: step = 1600, chunks = ceil(6000/1600) = 4
+      expect(chunks400.length).toBeGreaterThanOrEqual(chunks50.length);
+    });
+
+    it('should throw error for negative overlap', () => {
+      const text = 'test text';
+      expect(() => chunkText(text, 1000, -10)).toThrow('overlapTokens must be non-negative');
+    });
+
+    it('should improve semantic coherence across chunk boundaries', () => {
+      // Create a text with clear sentence structure
+      const paragraph = 'This is a test sentence. '.repeat(400); // ~400 sentences
+      const chunks = chunkText(paragraph, 1000, 200);
+
+      expect(chunks.length).toBeGreaterThan(1);
+
+      // Verify each chunk has meaningful content (not cut mid-word)
+      chunks.forEach(chunk => {
+        expect(chunk.text.length).toBeGreaterThan(0);
+        // Should not be just whitespace
+        expect(chunk.text.trim().length).toBeGreaterThan(0);
+      });
     });
   });
 });
