@@ -130,20 +130,6 @@ tasks:
     test_refs: []
     notes: "Enhancement mentioned in SPEC-embedding-pipeline-1"
 
-  - task_id: TASK-022
-    spec_id: null
-    title: "Add incremental embedding optimization"
-    priority: 4
-    status: pending
-    dependencies: []
-    estimated_effort: 3 hours
-    description: |
-      Cache embeddings for unchanged chunks.
-      Only re-embed modified chunks when file changes.
-      Reduce API calls and processing time.
-      Store chunk hash with vectors for change detection.
-    test_refs: []
-
   - task_id: TASK-023
     spec_id: null
     title: "Add rate limiting and cost tracking"

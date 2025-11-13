@@ -18,6 +18,7 @@ export interface VectorPoint {
     file_name: string;
     file_path: string;
     chunk_index: number;
+    chunk_hash: string;
     last_modified: string;
     text?: string;
   };
@@ -108,6 +109,70 @@ export class QdrantClient {
     } catch (error) {
       throw new QdrantError('Failed to upsert vectors', {
         vectorCount: vectors.length,
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  /**
+   * Get all vectors for a specific file
+   */
+  async getVectorsByFileId(fileId: string): Promise<VectorPoint[]> {
+    try {
+      const response = await withRetry(async () => {
+        return await this.client.scroll(this.collectionName, {
+          filter: {
+            must: [
+              {
+                key: 'file_id',
+                match: {
+                  value: fileId,
+                },
+              },
+            ],
+          },
+          with_payload: true,
+          with_vector: true,
+          limit: 1000, // Max chunks per file (should be sufficient)
+        });
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const vectors: VectorPoint[] = response.points.map((point: any) => ({
+        id: point.id as string,
+        vector: point.vector as number[],
+        payload: point.payload as VectorPoint['payload'],
+      }));
+
+      return vectors;
+    } catch (error) {
+      throw new QdrantError('Failed to get vectors by file ID', {
+        fileId,
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  /**
+   * Delete specific vectors by their IDs
+   */
+  async deleteVectorsByIds(vectorIds: string[]): Promise<void> {
+    if (vectorIds.length === 0) {
+      return;
+    }
+
+    try {
+      await withRetry(async () => {
+        await this.client.delete(this.collectionName, {
+          wait: true,
+          points: vectorIds,
+        });
+      });
+
+      console.log(`Deleted ${vectorIds.length} obsolete vectors`);
+    } catch (error) {
+      throw new QdrantError('Failed to delete vectors by IDs', {
+        vectorCount: vectorIds.length,
         error: (error as Error).message,
       });
     }
