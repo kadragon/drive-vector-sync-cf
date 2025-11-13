@@ -1,16 +1,21 @@
 # Current Task
 # Only one task should be active at a time
 
-current_task: null
-
-# When ready to start, move first task from backlog.yaml here:
-# Example format:
-# current_task:
-#   task_id: TASK-013
-#   spec_id: null
-#   title: "Set up project infrastructure"
-#   status: in_progress
-#   started_at: "2025-11-13T14:00:00Z"
-#   progress_notes:
-#     - "Initialized wrangler project"
-#     - "Configured TypeScript strict mode"
+current_task:
+  task_id: TASK-012
+  spec_id: null
+  title: "Build main sync orchestrator"
+  status: completed
+  started_at: "2025-11-13T00:00:00Z"
+  completed_at: "2025-11-13T00:30:00Z"
+  progress_notes:
+    - "Implemented KV state management module"
+    - "Implemented error handling utilities with retry logic"
+    - "Implemented Google Drive OAuth2 client with changes API"
+    - "Implemented text chunking with tiktoken"
+    - "Implemented Qdrant client with collection initialization"
+    - "Implemented OpenAI embedding pipeline"
+    - "Built main sync orchestrator"
+    - "Implemented admin API endpoints"
+    - "Wired everything together in main index.ts"
+    - "All TypeScript type checks passing"
