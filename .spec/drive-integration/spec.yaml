@@ -1,0 +1,60 @@
+spec_id: SPEC-drive-integration-1
+title: "Google Drive API Integration"
+description: "Integrate with Google Drive API to fetch, monitor, and download Markdown files from specified folders"
+
+given_when_then:
+  - given: "Valid Google OAuth2 credentials are configured"
+    when: "System initializes Drive client"
+    then: "Drive client should be authenticated and ready to make API calls"
+
+  - given: "A root folder ID is specified"
+    when: "System scans for Markdown files recursively"
+    then: "All .md files in the folder tree should be discovered with metadata"
+
+  - given: "A startPageToken is stored in KV"
+    when: "System fetches changes since last sync"
+    then: "Only files modified/added/deleted since last sync should be returned"
+
+  - given: "A file ID is provided"
+    when: "System downloads file content"
+    then: "File content should be retrieved as UTF-8 text"
+
+  - given: "Drive API rate limits are encountered"
+    when: "System makes API requests"
+    then: "System should implement exponential backoff and retry logic"
+
+acceptance_tests:
+  - id: TEST-drive-integration-1
+    desc: "Successfully authenticate with Google Drive using OAuth2"
+
+  - id: TEST-drive-integration-2
+    desc: "Recursively list all .md files from root folder"
+
+  - id: TEST-drive-integration-3
+    desc: "Fetch changes using startPageToken"
+
+  - id: TEST-drive-integration-4
+    desc: "Download file content by file ID"
+
+  - id: TEST-drive-integration-5
+    desc: "Handle pagination for large folder lists"
+
+  - id: TEST-drive-integration-6
+    desc: "Retry failed API calls up to 3 times"
+
+dependencies:
+  governance:
+    - "env.yaml: google_drive_api settings"
+    - "patterns.md: Retry Logic Pattern"
+    - "patterns.md: Drive API Pagination Pattern"
+
+linked_tasks:
+  - TASK-001
+  - TASK-002
+  - TASK-003
+
+implementation_notes:
+  - "Use googleapis npm package"
+  - "Store OAuth tokens in Cloudflare Secrets"
+  - "Filter files by mimeType: text/markdown or extension .md"
+  - "Include parents field to construct full paths"

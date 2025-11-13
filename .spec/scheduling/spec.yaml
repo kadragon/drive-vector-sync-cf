@@ -1,0 +1,45 @@
+spec_id: SPEC-scheduling-1
+title: "Cloudflare Cron Scheduling"
+description: "Schedule automated daily sync at KST 01:00 using Cloudflare Cron Triggers"
+
+given_when_then:
+  - given: "Cron trigger is configured for daily KST 01:00"
+    when: "Scheduled time arrives"
+    then: "Worker should execute sync pipeline automatically"
+
+  - given: "Sync pipeline is running"
+    when: "Another cron trigger fires"
+    then: "System should detect running sync and skip (no concurrent runs)"
+
+  - given: "No changes in Drive since last sync"
+    when: "Cron executes"
+    then: "System should complete quickly as no-op"
+
+  - given: "Sync encounters fatal error"
+    when: "Cron execution fails"
+    then: "Error should be logged and next cron should retry normally"
+
+acceptance_tests:
+  - id: TEST-scheduling-1
+    desc: "Configure cron schedule in wrangler.toml"
+
+  - id: TEST-scheduling-2
+    desc: "Handle scheduled event in Worker"
+
+  - id: TEST-scheduling-3
+    desc: "Prevent concurrent sync executions"
+
+  - id: TEST-scheduling-4
+    desc: "Complete no-op sync quickly when no changes"
+
+dependencies:
+  governance:
+    - "env.yaml: cron_schedule configuration"
+
+linked_tasks:
+  - TASK-009
+
+implementation_notes:
+  - "Cron schedule: '0 17 * * *' (17:00 UTC = 01:00 KST next day)"
+  - "Use Durable Objects or KV lock pattern to prevent concurrent runs"
+  - "Log execution time and results for monitoring"

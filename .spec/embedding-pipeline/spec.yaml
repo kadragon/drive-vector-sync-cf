@@ -1,0 +1,59 @@
+spec_id: SPEC-embedding-pipeline-1
+title: "OpenAI Embedding Pipeline"
+description: "Process text documents through OpenAI text-embedding-3-large model with intelligent chunking"
+
+given_when_then:
+  - given: "A Markdown file content under token limit (2000 tokens)"
+    when: "System processes the file"
+    then: "Single embedding vector should be generated"
+
+  - given: "A Markdown file content exceeding token limit"
+    when: "System processes the file"
+    then: "File should be chunked at 2000 token boundaries and multiple vectors generated"
+
+  - given: "Multiple text chunks are ready for embedding"
+    when: "System sends batch request to OpenAI"
+    then: "Embeddings should be generated for all chunks in single API call"
+
+  - given: "OpenAI API returns embeddings"
+    when: "System receives response"
+    then: "3072-dimensional vectors should be extracted and validated"
+
+  - given: "Embedding request fails"
+    when: "System encounters error"
+    then: "Error should be logged and file should be skipped without blocking pipeline"
+
+acceptance_tests:
+  - id: TEST-embedding-pipeline-1
+    desc: "Generate single embedding for small file"
+
+  - id: TEST-embedding-pipeline-2
+    desc: "Chunk large file at 2000 token boundaries"
+
+  - id: TEST-embedding-pipeline-3
+    desc: "Batch embed 16-32 chunks in single API call"
+
+  - id: TEST-embedding-pipeline-4
+    desc: "Validate embedding vector dimensions (3072)"
+
+  - id: TEST-embedding-pipeline-5
+    desc: "Handle embedding API errors gracefully"
+
+  - id: TEST-embedding-pipeline-6
+    desc: "Track chunk indices correctly for multi-chunk files"
+
+dependencies:
+  governance:
+    - "env.yaml: embedding model configuration"
+    - "patterns.md: Chunking Strategy"
+    - "coding-style.md: Error handling"
+
+linked_tasks:
+  - TASK-004
+  - TASK-005
+
+implementation_notes:
+  - "Use tiktoken for accurate token counting"
+  - "Preserve chunk metadata (index, token count)"
+  - "Batch size configurable via env (default 32)"
+  - "No overlap between chunks (can be enhanced later)"

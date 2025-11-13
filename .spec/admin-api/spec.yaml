@@ -1,0 +1,49 @@
+spec_id: SPEC-admin-api-1
+title: "Admin API for Manual Operations"
+description: "Provide HTTP endpoints for manual sync triggers and system management"
+
+given_when_then:
+  - given: "Admin requests full resync"
+    when: "POST /admin/resync with valid token"
+    then: "System should clear state and initiate full Drive scan"
+
+  - given: "Admin requests sync status"
+    when: "GET /admin/status with valid token"
+    then: "System should return last sync time, files processed, and error count"
+
+  - given: "Invalid or missing admin token"
+    when: "Request to admin endpoint"
+    then: "System should return 401 Unauthorized"
+
+  - given: "Sync is already running"
+    when: "Admin triggers resync"
+    then: "System should return 409 Conflict with message"
+
+acceptance_tests:
+  - id: TEST-admin-api-1
+    desc: "Trigger full resync via POST /admin/resync"
+
+  - id: TEST-admin-api-2
+    desc: "Fetch sync status via GET /admin/status"
+
+  - id: TEST-admin-api-3
+    desc: "Reject requests with invalid admin token"
+
+  - id: TEST-admin-api-4
+    desc: "Prevent concurrent manual syncs"
+
+  - id: TEST-admin-api-5
+    desc: "Return proper HTTP status codes and JSON responses"
+
+dependencies:
+  governance:
+    - "env.yaml: ADMIN_TOKEN secret"
+
+linked_tasks:
+  - TASK-011
+
+implementation_notes:
+  - "Store ADMIN_TOKEN in Cloudflare Secrets"
+  - "Validate token via Bearer authentication"
+  - "Return JSON responses with proper status codes"
+  - "Add endpoint for collection statistics: /admin/stats"

@@ -1,0 +1,15 @@
+# Completed Tasks
+# Tasks are moved here when completed
+
+completed_tasks: []
+
+# Example format:
+# - task_id: TASK-001
+#   spec_id: SPEC-drive-integration-1
+#   title: "Implement Google Drive OAuth2 authentication"
+#   completed_at: "2025-11-13T16:30:00Z"
+#   duration: "3.5 hours"
+#   outcome: "Successfully implemented OAuth2 with refresh token flow"
+#   tests_passed:
+#     - TEST-drive-integration-1
+#   notes: "Token refresh logic tested with expired tokens"

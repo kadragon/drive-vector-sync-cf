@@ -1,0 +1,54 @@
+spec_id: SPEC-state-management-1
+title: "Cloudflare KV State Persistence"
+description: "Manage sync state using Cloudflare KV for incremental updates"
+
+given_when_then:
+  - given: "First sync execution (no state exists)"
+    when: "System checks for startPageToken"
+    then: "System should perform full scan of Drive folder"
+
+  - given: "Successful sync completes"
+    when: "System receives new startPageToken from Drive"
+    then: "Token should be persisted to KV for next sync"
+
+  - given: "Sync is running"
+    when: "System accesses KV"
+    then: "State should be read/written within Workers execution time limits"
+
+  - given: "Multiple sync attempts occur"
+    when: "Concurrent executions happen"
+    then: "State updates should be atomic and consistent"
+
+  - given: "State becomes corrupted"
+    when: "Admin triggers resync"
+    then: "State should be cleared and full scan initiated"
+
+acceptance_tests:
+  - id: TEST-state-management-1
+    desc: "Initialize state on first run (no startPageToken)"
+
+  - id: TEST-state-management-2
+    desc: "Save startPageToken after successful sync"
+
+  - id: TEST-state-management-3
+    desc: "Load startPageToken on subsequent runs"
+
+  - id: TEST-state-management-4
+    desc: "Handle missing KV namespace gracefully"
+
+  - id: TEST-state-management-5
+    desc: "Clear state on admin resync request"
+
+dependencies:
+  governance:
+    - "env.yaml: kv_namespaces configuration"
+    - "patterns.md: KV State Management"
+
+linked_tasks:
+  - TASK-008
+
+implementation_notes:
+  - "Use KV namespace: SYNC_STATE"
+  - "Key: 'drive_start_page_token'"
+  - "Store as JSON string"
+  - "Consider adding sync metadata (last_run, files_processed, errors)"

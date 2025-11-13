@@ -1,0 +1,35 @@
+name = "drive-vector-sync"
+main = "src/index.ts"
+compatibility_date = "2024-11-13"
+compatibility_flags = ["nodejs_compat"]
+
+# KV Namespace for state persistence
+[[kv_namespaces]]
+binding = "SYNC_STATE"
+id = "PLACEHOLDER_KV_ID"
+preview_id = "PLACEHOLDER_PREVIEW_KV_ID"
+
+# Cron trigger - Daily at 17:00 UTC (01:00 KST next day)
+[triggers]
+crons = ["0 17 * * *"]
+
+# Secrets (set via: wrangler secret put <SECRET_NAME>)
+# - GOOGLE_CLIENT_ID
+# - GOOGLE_CLIENT_SECRET
+# - GOOGLE_REFRESH_TOKEN
+# - GOOGLE_ROOT_FOLDER_ID
+# - OPENAI_API_KEY
+# - QDRANT_URL
+# - QDRANT_API_KEY
+# - ADMIN_TOKEN
+
+# Node.js compatibility for googleapis and other packages
+node_compat = true
+
+# Environment variables (non-sensitive)
+[vars]
+CHUNK_SIZE = "2000"
+MAX_BATCH_SIZE = "32"
+MAX_CONCURRENCY = "4"
+MAX_RETRIES = "3"
+QDRANT_COLLECTION_NAME = "project_docs"

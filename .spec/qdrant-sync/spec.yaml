@@ -1,0 +1,63 @@
+spec_id: SPEC-qdrant-sync-1
+title: "Qdrant Vector Database Synchronization"
+description: "Sync embedded vectors to Qdrant Cloud with proper metadata and change tracking"
+
+given_when_then:
+  - given: "Qdrant collection 'project_docs' is initialized"
+    when: "System starts"
+    then: "Collection should exist with correct schema (3072 dims, cosine distance)"
+
+  - given: "New file embeddings are generated"
+    when: "System upserts to Qdrant"
+    then: "Vectors should be stored with metadata (file_id, path, chunk_index, last_modified, file_name)"
+
+  - given: "File is modified in Drive"
+    when: "System detects change"
+    then: "Old vectors should be deleted and new vectors upserted"
+
+  - given: "File is deleted in Drive"
+    when: "System processes deletion"
+    then: "All associated vectors should be removed from Qdrant"
+
+  - given: "Multiple vectors need insertion"
+    when: "System performs batch upsert"
+    then: "All vectors should be inserted in single API call"
+
+  - given: "Vector ID already exists"
+    when: "System upserts with same ID"
+    then: "Existing vector should be updated (upsert semantics)"
+
+acceptance_tests:
+  - id: TEST-qdrant-sync-1
+    desc: "Initialize Qdrant collection with correct schema"
+
+  - id: TEST-qdrant-sync-2
+    desc: "Upsert single-chunk file vector with metadata"
+
+  - id: TEST-qdrant-sync-3
+    desc: "Upsert multi-chunk file vectors with sequential indices"
+
+  - id: TEST-qdrant-sync-4
+    desc: "Delete all vectors for a given file_id"
+
+  - id: TEST-qdrant-sync-5
+    desc: "Batch upsert multiple vectors efficiently"
+
+  - id: TEST-qdrant-sync-6
+    desc: "Generate correct vector IDs: {file_id}_{chunk_index}"
+
+dependencies:
+  governance:
+    - "env.yaml: qdrant configuration"
+    - "patterns.md: Vector ID Generation"
+    - "patterns.md: Qdrant Batch Upsert Pattern"
+
+linked_tasks:
+  - TASK-006
+  - TASK-007
+
+implementation_notes:
+  - "Use @qdrant/js-client-rest package"
+  - "Store Qdrant URL and API key in Secrets"
+  - "Use wait=true for upsert to ensure consistency"
+  - "Delete by filter: payload.file_id == target_id"

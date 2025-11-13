@@ -1,0 +1,16 @@
+# Current Task
+# Only one task should be active at a time
+
+current_task: null
+
+# When ready to start, move first task from backlog.yaml here:
+# Example format:
+# current_task:
+#   task_id: TASK-013
+#   spec_id: null
+#   title: "Set up project infrastructure"
+#   status: in_progress
+#   started_at: "2025-11-13T14:00:00Z"
+#   progress_notes:
+#     - "Initialized wrangler project"
+#     - "Configured TypeScript strict mode"
