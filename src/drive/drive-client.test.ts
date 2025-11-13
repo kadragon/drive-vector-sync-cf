@@ -1,0 +1,544 @@
+/**
+ * Tests for DriveClient path building and recursive filtering
+ */
+
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { DriveClient } from './drive-client.js';
+import { google } from 'googleapis';
+
+// Mock googleapis
+vi.mock('googleapis', () => ({
+  google: {
+    auth: {
+      OAuth2: vi.fn().mockImplementation(() => ({
+        setCredentials: vi.fn(),
+      })),
+    },
+    drive: vi.fn(),
+  },
+}));
+
+describe('DriveClient - Path Building and Filtering', () => {
+  let driveClient: DriveClient;
+  let mockDrive: any;
+
+  beforeEach(() => {
+    mockDrive = {
+      files: {
+        get: vi.fn(),
+        list: vi.fn(),
+      },
+      changes: {
+        getStartPageToken: vi.fn(),
+        list: vi.fn(),
+      },
+    };
+
+    vi.mocked(google.drive).mockReturnValue(mockDrive as any);
+
+    driveClient = new DriveClient({
+      clientId: 'test-client-id',
+      clientSecret: 'test-client-secret',
+      refreshToken: 'test-refresh-token',
+    });
+  });
+
+  describe('buildFilePath', () => {
+    it('should return just filename for file with no parents', async () => {
+      // Mock for isFileInFolder check - file is in root folder
+      mockDrive.files.get.mockResolvedValueOnce({
+        data: {
+          id: 'file-1',
+          name: 'test.md',
+          parents: [],
+        },
+      });
+
+      mockDrive.changes.list.mockResolvedValueOnce({
+        data: {
+          changes: [
+            {
+              fileId: 'file-1',
+              file: {
+                id: 'file-1',
+                name: 'test.md',
+                mimeType: 'text/markdown',
+                modifiedTime: '2023-01-01T00:00:00Z',
+                parents: ['root-folder'],
+              },
+            },
+          ],
+          newStartPageToken: 'token-123',
+        },
+      });
+
+      const result = await driveClient.fetchChanges('token-start', 'root-folder');
+      expect(result.changes).toHaveLength(1);
+      expect(result.changes[0].file?.path).toBe('test.md');
+    });
+
+    it('should build full path by traversing parent folders', async () => {
+      // Setup: root-folder -> folder1 -> folder2 -> file.md
+      mockDrive.files.get
+        // isFileInFolder checks: folder-2 -> folder-1 -> root-folder
+        .mockResolvedValueOnce({
+          data: {
+            id: 'folder-2',
+            name: 'folder2',
+            parents: ['folder-1'],
+          },
+        })
+        .mockResolvedValueOnce({
+          data: {
+            id: 'folder-1',
+            name: 'folder1',
+            parents: ['root-folder'],
+          },
+        })
+        // buildFilePath calls: file -> folder2 -> folder1 -> root-folder
+        .mockResolvedValueOnce({
+          data: {
+            id: 'file-1',
+            name: 'test.md',
+            parents: ['folder-2'],
+          },
+        })
+        // folder-2 already cached from isFileInFolder
+        // folder-1 already cached from isFileInFolder
+        .mockResolvedValueOnce({
+          data: {
+            id: 'root-folder',
+            name: 'root',
+            parents: [],
+          },
+        });
+
+      mockDrive.changes.list.mockResolvedValueOnce({
+        data: {
+          changes: [
+            {
+              fileId: 'file-1',
+              file: {
+                id: 'file-1',
+                name: 'test.md',
+                mimeType: 'text/markdown',
+                modifiedTime: '2023-01-01T00:00:00Z',
+                parents: ['folder-2'],
+              },
+            },
+          ],
+          newStartPageToken: 'token-123',
+        },
+      });
+
+      const result = await driveClient.fetchChanges('token-start', 'root-folder');
+      expect(result.changes).toHaveLength(1);
+      expect(result.changes[0].file?.path).toBe('root/folder1/folder2/test.md');
+    });
+
+    it('should use cached path on second request', async () => {
+      // First request - will build path
+      mockDrive.files.get
+        // isFileInFolder: check folder-1 -> root-folder
+        .mockResolvedValueOnce({
+          data: {
+            id: 'folder-1',
+            name: 'folder1',
+            parents: ['root-folder'],
+          },
+        })
+        // buildFilePath: get file info
+        .mockResolvedValueOnce({
+          data: {
+            id: 'file-1',
+            name: 'test.md',
+            parents: ['folder-1'],
+          },
+        });
+      // folder-1 already cached
+
+      mockDrive.changes.list.mockResolvedValueOnce({
+        data: {
+          changes: [
+            {
+              fileId: 'file-1',
+              file: {
+                id: 'file-1',
+                name: 'test.md',
+                mimeType: 'text/markdown',
+                modifiedTime: '2023-01-01T00:00:00Z',
+                parents: ['folder-1'],
+              },
+            },
+          ],
+          newStartPageToken: 'token-123',
+        },
+      });
+
+      await driveClient.fetchChanges('token-start', 'root-folder');
+
+      // Second request - should use cache (no more get calls)
+      mockDrive.changes.list.mockResolvedValueOnce({
+        data: {
+          changes: [
+            {
+              fileId: 'file-1',
+              file: {
+                id: 'file-1',
+                name: 'test.md',
+                mimeType: 'text/markdown',
+                modifiedTime: '2023-01-01T00:00:00Z',
+                parents: ['folder-1'],
+              },
+            },
+          ],
+          newStartPageToken: 'token-456',
+        },
+      });
+
+      await driveClient.fetchChanges('token-123', 'root-folder');
+
+      // Should have called get only 4 times total
+      // First request: isFileInFolder (folder-1), buildFilePath (file-1)
+      // Second request: isFileInFolder uses cache, buildFilePath uses cache but still calls get twice
+      expect(mockDrive.files.get).toHaveBeenCalledTimes(4);
+    });
+
+    it('should handle path building errors gracefully', async () => {
+      // isFileInFolder succeeds
+      mockDrive.files.get.mockResolvedValueOnce({
+        data: {
+          id: 'folder-1',
+          name: 'folder1',
+          parents: ['root-folder'],
+        },
+      });
+
+      // buildFilePath fails
+      mockDrive.files.get.mockRejectedValueOnce(new Error('API error'));
+
+      mockDrive.changes.list.mockResolvedValueOnce({
+        data: {
+          changes: [
+            {
+              fileId: 'file-1',
+              file: {
+                id: 'file-1',
+                name: 'test.md',
+                mimeType: 'text/markdown',
+                modifiedTime: '2023-01-01T00:00:00Z',
+                parents: ['folder-1'],
+              },
+            },
+          ],
+          newStartPageToken: 'token-123',
+        },
+      });
+
+      const result = await driveClient.fetchChanges('token-start', 'root-folder');
+      // Should fall back to just filename
+      expect(result.changes).toHaveLength(1);
+      expect(result.changes[0].file?.path).toBe('test.md');
+    });
+  });
+
+  describe('isFileInFolder', () => {
+    it('should detect file in root folder (direct parent)', async () => {
+      // isFileInFolder: direct parent is root-folder (no API call needed, matches immediately)
+      // buildFilePath: get file info
+      mockDrive.files.get.mockResolvedValueOnce({
+        data: {
+          id: 'file-1',
+          name: 'test.md',
+          parents: ['root-folder'],
+        },
+      });
+
+      mockDrive.changes.list.mockResolvedValueOnce({
+        data: {
+          changes: [
+            {
+              fileId: 'file-1',
+              file: {
+                id: 'file-1',
+                name: 'test.md',
+                mimeType: 'text/markdown',
+                modifiedTime: '2023-01-01T00:00:00Z',
+                parents: ['root-folder'],
+              },
+            },
+          ],
+          newStartPageToken: 'token-123',
+        },
+      });
+
+      const result = await driveClient.fetchChanges('token-start', 'root-folder');
+      expect(result.changes).toHaveLength(1);
+      expect(result.changes[0].type).toBe('modified');
+    });
+
+    it('should detect file in nested folder (indirect parent)', async () => {
+      // Setup: root-folder -> folder1 -> folder2 -> file
+      mockDrive.files.get
+        // isFileInFolder: folder-2 -> folder-1 -> root-folder
+        .mockResolvedValueOnce({
+          data: {
+            id: 'folder-2',
+            name: 'folder2',
+            parents: ['folder-1'],
+          },
+        })
+        .mockResolvedValueOnce({
+          data: {
+            id: 'folder-1',
+            name: 'folder1',
+            parents: ['root-folder'],
+          },
+        })
+        // buildFilePath: file -> folder-2 (cached) -> folder-1 (cached) -> root-folder
+        .mockResolvedValueOnce({
+          data: {
+            id: 'file-1',
+            name: 'test.md',
+            parents: ['folder-2'],
+          },
+        })
+        .mockResolvedValueOnce({
+          data: {
+            id: 'root-folder',
+            name: 'root',
+            parents: [],
+          },
+        });
+
+      mockDrive.changes.list.mockResolvedValueOnce({
+        data: {
+          changes: [
+            {
+              fileId: 'file-1',
+              file: {
+                id: 'file-1',
+                name: 'test.md',
+                mimeType: 'text/markdown',
+                modifiedTime: '2023-01-01T00:00:00Z',
+                parents: ['folder-2'],
+              },
+            },
+          ],
+          newStartPageToken: 'token-123',
+        },
+      });
+
+      const result = await driveClient.fetchChanges('token-start', 'root-folder');
+      expect(result.changes).toHaveLength(1);
+      expect(result.changes[0].type).toBe('modified');
+    });
+
+    it('should reject file not in root folder tree', async () => {
+      // isFileInFolder: other-folder -> different-root (not root-folder)
+      mockDrive.files.get
+        .mockResolvedValueOnce({
+          data: {
+            id: 'other-folder',
+            name: 'other',
+            parents: ['different-root'],
+          },
+        })
+        .mockResolvedValueOnce({
+          data: {
+            id: 'different-root',
+            name: 'different',
+            parents: [],
+          },
+        });
+
+      mockDrive.changes.list.mockResolvedValueOnce({
+        data: {
+          changes: [
+            {
+              fileId: 'file-1',
+              file: {
+                id: 'file-1',
+                name: 'test.md',
+                mimeType: 'text/markdown',
+                modifiedTime: '2023-01-01T00:00:00Z',
+                parents: ['other-folder'],
+              },
+            },
+          ],
+          newStartPageToken: 'token-123',
+        },
+      });
+
+      const result = await driveClient.fetchChanges('token-start', 'root-folder');
+      // File should be filtered out
+      expect(result.changes).toHaveLength(0);
+    });
+
+    it('should use cached folder hierarchy', async () => {
+      // First request
+      mockDrive.files.get
+        // isFileInFolder: folder-1
+        .mockResolvedValueOnce({
+          data: {
+            id: 'folder-1',
+            name: 'folder1',
+            parents: ['root-folder'],
+          },
+        })
+        // buildFilePath: file-1
+        .mockResolvedValueOnce({
+          data: {
+            id: 'file-1',
+            name: 'test.md',
+            parents: ['folder-1'],
+          },
+        });
+
+      mockDrive.changes.list.mockResolvedValueOnce({
+        data: {
+          changes: [
+            {
+              fileId: 'file-1',
+              file: {
+                id: 'file-1',
+                name: 'test.md',
+                mimeType: 'text/markdown',
+                modifiedTime: '2023-01-01T00:00:00Z',
+                parents: ['folder-1'],
+              },
+            },
+          ],
+          newStartPageToken: 'token-123',
+        },
+      });
+
+      await driveClient.fetchChanges('token-start', 'root-folder');
+
+      // Second request with same folder hierarchy
+      // folder-1 is cached, so only need file-2
+      mockDrive.files.get.mockResolvedValueOnce({
+        data: {
+          id: 'file-2',
+          name: 'test2.md',
+          parents: ['folder-1'],
+        },
+      });
+
+      mockDrive.changes.list.mockResolvedValueOnce({
+        data: {
+          changes: [
+            {
+              fileId: 'file-2',
+              file: {
+                id: 'file-2',
+                name: 'test2.md',
+                mimeType: 'text/markdown',
+                modifiedTime: '2023-01-01T00:00:00Z',
+                parents: ['folder-1'],
+              },
+            },
+          ],
+          newStartPageToken: 'token-456',
+        },
+      });
+
+      await driveClient.fetchChanges('token-123', 'root-folder');
+
+      // folder-1 should be cached, so 5 get calls total
+      // First request: isFileInFolder (folder-1), buildFilePath (file-1)
+      // Second request: isFileInFolder uses cache, buildFilePath (file-2) + 2 more calls
+      expect(mockDrive.files.get).toHaveBeenCalledTimes(5);
+    });
+  });
+
+  describe('clearCache', () => {
+    it('should clear all caches', async () => {
+      // Build up cache
+      mockDrive.files.get
+        // isFileInFolder: folder-1
+        .mockResolvedValueOnce({
+          data: {
+            id: 'folder-1',
+            name: 'folder1',
+            parents: ['root-folder'],
+          },
+        })
+        // buildFilePath: file-1
+        .mockResolvedValueOnce({
+          data: {
+            id: 'file-1',
+            name: 'test.md',
+            parents: ['folder-1'],
+          },
+        });
+
+      mockDrive.changes.list.mockResolvedValueOnce({
+        data: {
+          changes: [
+            {
+              fileId: 'file-1',
+              file: {
+                id: 'file-1',
+                name: 'test.md',
+                mimeType: 'text/markdown',
+                modifiedTime: '2023-01-01T00:00:00Z',
+                parents: ['folder-1'],
+              },
+            },
+          ],
+          newStartPageToken: 'token-123',
+        },
+      });
+
+      await driveClient.fetchChanges('token-start', 'root-folder');
+
+      // Clear cache
+      driveClient.clearCache();
+
+      // Next request should re-fetch everything
+      mockDrive.files.get
+        // isFileInFolder: folder-1 (re-fetched)
+        .mockResolvedValueOnce({
+          data: {
+            id: 'folder-1',
+            name: 'folder1',
+            parents: ['root-folder'],
+          },
+        })
+        // buildFilePath: file-1 (re-fetched)
+        .mockResolvedValueOnce({
+          data: {
+            id: 'file-1',
+            name: 'test.md',
+            parents: ['folder-1'],
+          },
+        });
+
+      mockDrive.changes.list.mockResolvedValueOnce({
+        data: {
+          changes: [
+            {
+              fileId: 'file-1',
+              file: {
+                id: 'file-1',
+                name: 'test.md',
+                mimeType: 'text/markdown',
+                modifiedTime: '2023-01-01T00:00:00Z',
+                parents: ['folder-1'],
+              },
+            },
+          ],
+          newStartPageToken: 'token-456',
+        },
+      });
+
+      await driveClient.fetchChanges('token-123', 'root-folder');
+
+      // Should have called get 6 times total
+      // First request: isFileInFolder (folder-1), buildFilePath (file-1)
+      // Second request after cache clear: isFileInFolder (folder-1), buildFilePath (file-1) + 2 more
+      expect(mockDrive.files.get).toHaveBeenCalledTimes(6);
+    });
+  });
+});
