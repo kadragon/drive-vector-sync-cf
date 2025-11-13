@@ -334,8 +334,14 @@ export class DriveClient {
       }
 
       return false;
-    } catch {
-      // If we can't fetch folder info, assume not in tree
+    } catch (error) {
+      // Log error for debugging while maintaining graceful fallback
+      console.error('Failed to check folder ancestry, assuming file not in tree', {
+        currentFolderId,
+        targetFolderId,
+        depth,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }
@@ -415,8 +421,13 @@ export class DriveClient {
       this.pathCache.set(fileId, fullPath);
 
       return fullPath;
-    } catch {
-      // If path building fails, return just the filename
+    } catch (error) {
+      // Log error for debugging while maintaining graceful fallback
+      console.error('Failed to build file path, falling back to filename', {
+        fileId,
+        fileName,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return fileName;
     }
   }
