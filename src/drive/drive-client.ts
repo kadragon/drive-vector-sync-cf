@@ -36,6 +36,8 @@ export interface DriveChange {
  * Google Drive client with OAuth2 authentication
  */
 export class DriveClient {
+  private static readonly MAX_RECURSION_DEPTH = 10;
+
   private drive: drive_v3.Drive;
   private auth: OAuth2Client;
   private folderCache: Map<string, { name: string; parents?: string[] }>;
@@ -297,8 +299,7 @@ export class DriveClient {
     depth: number
   ): Promise<boolean> {
     // Prevent infinite recursion
-    const maxDepth = 10;
-    if (depth >= maxDepth) {
+    if (depth >= DriveClient.MAX_RECURSION_DEPTH) {
       return false;
     }
 
@@ -401,11 +402,10 @@ export class DriveClient {
       // Build path by traversing parent folders
       const pathParts: string[] = [fileName];
 
-      // Traverse up to 10 levels to prevent infinite loops
+      // Traverse up to MAX_RECURSION_DEPTH levels to prevent infinite loops
       let depth = 0;
-      const maxDepth = 10;
 
-      while (currentParentId && depth < maxDepth) {
+      while (currentParentId && depth < DriveClient.MAX_RECURSION_DEPTH) {
         // Stop when we reach the root folder (don't include root folder name in path)
         if (currentParentId === rootFolderId) {
           break;
