@@ -176,3 +176,49 @@ completed_tasks:
       Added getVectorsByFileId() method to QdrantClient.
       Refactored processFile() to compare hashes and reuse embeddings.
       All 85 tests passing.
+
+  - task_id: TASK-016
+    spec_id: null
+    title: "Implement Drive path building"
+    completed_at: "2025-11-13T13:15:00Z"
+    duration: "N/A - Already implemented"
+    outcome: "Full folder path building with recursive parent traversal and caching"
+    tests_passed:
+      - buildFilePath tests (6 tests in drive-client.test.ts)
+    notes: |
+      Feature was already fully implemented in DriveClient.
+      buildFilePath() method traverses parent folders to build complete paths.
+      Implements path caching (pathCache) and folder caching (folderCache).
+      Handles multiple parents by selecting path to root folder.
+      All 12 Drive client tests passing.
+
+  - task_id: TASK-017
+    spec_id: null
+    title: "Improve file filtering in changes API"
+    completed_at: "2025-11-13T13:15:00Z"
+    duration: "N/A - Already implemented"
+    outcome: "Recursive parent chain checking with folder hierarchy caching"
+    tests_passed:
+      - isFileInFolder tests (6 tests in drive-client.test.ts)
+    notes: |
+      Feature was already fully implemented in DriveClient.
+      isFileInFolder() and isAncestorFolder() methods recursively traverse parent chain.
+      Implements folder hierarchy caching to reduce API calls.
+      Properly detects files in nested folder structures.
+      All 12 Drive client tests passing.
+
+  - task_id: TASK-020
+    spec_id: null
+    title: "Implement chunking with overlap"
+    completed_at: "2025-11-13T13:39:00Z"
+    duration: "1.5 hours"
+    outcome: "Configurable chunk overlap for improved semantic coherence"
+    tests_passed:
+      - All 17 original chunking tests
+      - 7 new chunk overlap tests
+    notes: |
+      Added overlapTokens parameter to chunkText() with default 200 tokens.
+      Auto-adjusts overlap to max 50% of maxTokens to ensure progress.
+      Improves semantic coherence across chunk boundaries.
+      All 24 chunking tests passing.
+      Backward compatible - existing code works without changes.

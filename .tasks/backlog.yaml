@@ -52,36 +52,6 @@ tasks:
       Add monitoring and alerting setup guide.
     test_refs: []
 
-  - task_id: TASK-016
-    spec_id: null
-    title: "Implement Drive path building"
-    priority: 3
-    status: pending
-    dependencies: []
-    estimated_effort: 2 hours
-    description: |
-      Enhance buildFilePath() to construct full folder paths.
-      Traverse parent folders to build complete file paths.
-      Currently returns only file name - needs full path reconstruction.
-      Cache folder path mappings for performance.
-    test_refs: []
-    notes: "TODO in src/drive/drive-client.ts:293"
-
-  - task_id: TASK-017
-    spec_id: null
-    title: "Improve file filtering in changes API"
-    priority: 3
-    status: pending
-    dependencies: []
-    estimated_effort: 2 hours
-    description: |
-      Enhance isFileInFolder() with recursive parent checking.
-      Currently only checks direct parent match.
-      Need to traverse entire parent chain for accuracy.
-      Cache folder hierarchy for performance.
-    test_refs: []
-    notes: "TODO in src/drive/drive-client.ts:269"
-
   - task_id: TASK-018
     spec_id: null
     title: "Add monitoring and alerting"
@@ -114,21 +84,6 @@ tasks:
       Add content extraction for Google Docs native format.
       Update filtering logic and tests.
     test_refs: []
-
-  - task_id: TASK-020
-    spec_id: null
-    title: "Implement chunking with overlap"
-    priority: 4
-    status: pending
-    dependencies: []
-    estimated_effort: 2 hours
-    description: |
-      Add configurable overlap between chunks (e.g., 200 tokens).
-      Improve semantic coherence across chunk boundaries.
-      Currently no overlap (noted in embedding-pipeline spec).
-      Add tests for overlap functionality.
-    test_refs: []
-    notes: "Enhancement mentioned in SPEC-embedding-pipeline-1"
 
   - task_id: TASK-023
     spec_id: null

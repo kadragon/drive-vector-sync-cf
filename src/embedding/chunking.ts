@@ -15,12 +15,30 @@ export interface ChunkResult {
 }
 
 /**
- * Chunk text at token boundaries
+ * Chunk text at token boundaries with configurable overlap
+ *
+ * @param text - The text to chunk
+ * @param maxTokens - Maximum tokens per chunk (default: 2000)
+ * @param overlapTokens - Number of tokens to overlap between chunks (default: 200)
  */
 export function chunkText(
   text: string,
-  maxTokens: number = 2000
+  maxTokens: number = 2000,
+  overlapTokens: number = 200
 ): ChunkResult[] {
+  // Validate parameters
+  if (maxTokens <= 0) {
+    throw new Error('maxTokens must be positive');
+  }
+
+  if (overlapTokens < 0) {
+    throw new Error('overlapTokens must be non-negative');
+  }
+
+  // Auto-adjust overlap if it's too large for the given maxTokens
+  // Overlap should not exceed 50% of maxTokens to ensure progress
+  const effectiveOverlap = Math.min(overlapTokens, Math.floor(maxTokens * 0.5));
+
   // Get encoding for text-embedding-3-large (uses cl100k_base)
   const encoding = get_encoding('cl100k_base');
 
@@ -38,9 +56,11 @@ export function chunkText(
       ];
     }
 
-    // Split into chunks
+    // Split into chunks with overlap
     const chunks: ChunkResult[] = [];
-    for (let i = 0; i < tokens.length; i += maxTokens) {
+    const step = maxTokens - effectiveOverlap;
+
+    for (let i = 0; i < tokens.length; i += step) {
       const chunkTokens = tokens.slice(i, i + maxTokens);
       const chunkText = new TextDecoder().decode(encoding.decode(chunkTokens));
 
@@ -49,6 +69,11 @@ export function chunkText(
         index: chunks.length,
         tokenCount: chunkTokens.length,
       });
+
+      // If we've covered all tokens, break
+      if (i + maxTokens >= tokens.length) {
+        break;
+      }
     }
 
     return chunks;
@@ -75,5 +100,5 @@ export function countTokens(text: string): number {
  * Validate chunk size
  */
 export function validateChunkSize(chunks: ChunkResult[], maxTokens: number): boolean {
-  return chunks.every((chunk) => chunk.tokenCount <= maxTokens);
+  return chunks.every(chunk => chunk.tokenCount <= maxTokens);
 }

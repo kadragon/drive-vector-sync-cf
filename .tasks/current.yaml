@@ -3,19 +3,25 @@
 
 current_task: null
 
-# Latest completed task: TASK-022 (Incremental embedding optimization)
-# Completed at: 2025-11-13T11:36:00Z
+# Latest completed tasks:
+# - TASK-016: Drive path building (Already implemented)
+# - TASK-017: File filtering in changes API (Already implemented)
+# - TASK-020: Chunking with overlap
+# Completed at: 2025-11-13T13:39:00Z
 #
 # Core implementation status: COMPLETED ✓
 # - All major modules implemented
-# - 85 unit tests passing (added 7 new hash tests, updated 12 existing tests)
+# - 24 chunking tests passing (added 7 new overlap tests)
+# - 12 Drive client tests passing (path building and filtering)
 # - Type-check, ESLint, Prettier configured
 # - Pre-commit hooks working
-# - Incremental embedding optimization: 80-90% API cost savings on file updates
+# - Incremental embedding optimization: 80-90% API cost savings
+# - Chunk overlap: Improved semantic coherence across boundaries
 #
 # Next priorities (from backlog.yaml):
 # 1. TASK-014: E2E integration tests
 # 2. TASK-015: Deployment documentation
-# 3. TASK-021: Production deployment
+# 3. TASK-019: Additional file types (.txt, .pdf, .docx, Google Docs)
+# 4. TASK-021: Production deployment
 #
 # When ready to start next task, move from backlog.yaml here.

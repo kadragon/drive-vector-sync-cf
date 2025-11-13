@@ -56,4 +56,4 @@ implementation_notes:
   - "Use tiktoken for accurate token counting"
   - "Preserve chunk metadata (index, token count)"
   - "Batch size configurable via env (default 32)"
-  - "No overlap between chunks (can be enhanced later)"
+  - "Configurable chunk overlap (default 200 tokens) for semantic coherence"
