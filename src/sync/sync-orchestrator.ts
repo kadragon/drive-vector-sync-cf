@@ -212,9 +212,21 @@ export class SyncOrchestrator {
     try {
       existingVectors = await this.qdrantClient.getVectorsByFileId(file.id);
       console.log(`Found ${existingVectors.length} existing vectors for file`);
-    } catch {
-      // If fetching fails or collection doesn't exist yet, proceed with full embedding
-      console.log('No existing vectors found, will embed all chunks');
+    } catch (error) {
+      const err = error as Error;
+
+      // Only log as error if it's not a "collection doesn't exist" case
+      if (err.message?.includes('collection') || err.message?.includes('not found')) {
+        console.log(
+          'No existing vectors found (collection may not exist yet), will embed all chunks'
+        );
+      } else {
+        // Unexpected error - log it for investigation
+        logError(err, {
+          fileId: file.id,
+          context: 'Failed to fetch existing vectors, proceeding with full embedding',
+        });
+      }
     }
 
     // 5. Build a map of existing chunk hashes to vectors
