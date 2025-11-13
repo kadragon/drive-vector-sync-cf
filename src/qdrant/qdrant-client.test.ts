@@ -242,6 +242,33 @@ describe('Qdrant Client', () => {
     });
   });
 
+  describe('Delete vectors by IDs', () => {
+    it('should delete specific vectors by their IDs', async () => {
+      const vectorIds = ['file123_0', 'file123_5', 'file123_9'];
+      await client.deleteVectorsByIds(vectorIds);
+
+      expect(mockQdrantClient.delete).toHaveBeenCalledWith('test_collection', {
+        wait: true,
+        points: vectorIds,
+      });
+    });
+
+    it('should handle empty array gracefully', async () => {
+      await client.deleteVectorsByIds([]);
+
+      expect(mockQdrantClient.delete).not.toHaveBeenCalled();
+    });
+
+    it('should delete single vector ID', async () => {
+      await client.deleteVectorsByIds(['file456_10']);
+
+      expect(mockQdrantClient.delete).toHaveBeenCalledWith('test_collection', {
+        wait: true,
+        points: ['file456_10'],
+      });
+    });
+  });
+
   describe('TEST-qdrant-sync-4: Delete all vectors for a given file_id', () => {
     it('should delete vectors by file_id filter', async () => {
       await client.deleteVectorsByFileId('file789');

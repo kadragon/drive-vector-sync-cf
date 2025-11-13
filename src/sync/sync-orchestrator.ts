@@ -307,9 +307,8 @@ export class SyncOrchestrator {
     );
 
     if (vectorsToDelete.length > 0) {
-      console.log(`Deleting ${vectorsToDelete.length} obsolete vectors`);
-      // Note: We'll delete by file_id and then re-upsert, which effectively handles this
-      // For a more granular approach, we could delete specific vector IDs
+      const idsToDelete = vectorsToDelete.map(v => v.id);
+      await this.qdrantClient.deleteVectorsByIds(idsToDelete);
     }
 
     // 9. Upsert all vectors (both reused and newly embedded)

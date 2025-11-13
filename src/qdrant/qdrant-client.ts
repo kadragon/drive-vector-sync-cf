@@ -154,6 +154,31 @@ export class QdrantClient {
   }
 
   /**
+   * Delete specific vectors by their IDs
+   */
+  async deleteVectorsByIds(vectorIds: string[]): Promise<void> {
+    if (vectorIds.length === 0) {
+      return;
+    }
+
+    try {
+      await withRetry(async () => {
+        await this.client.delete(this.collectionName, {
+          wait: true,
+          points: vectorIds,
+        });
+      });
+
+      console.log(`Deleted ${vectorIds.length} obsolete vectors`);
+    } catch (error) {
+      throw new QdrantError('Failed to delete vectors by IDs', {
+        vectorCount: vectorIds.length,
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  /**
    * Delete all vectors for a file
    */
   async deleteVectorsByFileId(fileId: string): Promise<void> {
