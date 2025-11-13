@@ -171,3 +171,23 @@ export class ErrorCollector {
     this.errors = [];
   }
 }
+
+/**
+ * Convert unknown error to Error object
+ * Useful for handling Promise rejections where reason can be any type
+ */
+export function toError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+
+  if (typeof error === 'string') {
+    return new Error(error);
+  }
+
+  if (error && typeof error === 'object' && 'message' in error) {
+    return new Error(String(error.message));
+  }
+
+  return new Error('Unknown error: ' + String(error));
+}

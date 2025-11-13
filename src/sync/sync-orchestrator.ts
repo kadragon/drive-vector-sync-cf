@@ -12,7 +12,7 @@ import { EmbeddingClient } from '../embedding/embedding-client.js';
 import { chunkText } from '../embedding/chunking.js';
 import { QdrantClient, VectorPoint, generateVectorId } from '../qdrant/qdrant-client.js';
 import { KVStateManager } from '../state/kv-state-manager.js';
-import { ErrorCollector, logError } from '../errors/index.js';
+import { ErrorCollector, logError, toError } from '../errors/index.js';
 
 export interface SyncConfig {
   chunkSize: number;
@@ -75,8 +75,9 @@ export class SyncOrchestrator {
             filesProcessed++;
             vectorsUpserted += result.value;
           } else {
-            errorCollector.addError(result.reason);
-            logError(result.reason);
+            const error = toError(result.reason);
+            errorCollector.addError(error);
+            logError(error);
           }
         }
       }
