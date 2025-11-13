@@ -33,7 +33,7 @@
     "prettier": "^3.3.3",
     "typescript": "^5.7.2",
     "vitest": "^2.1.5",
-    "wrangler": "^3.87.0"
+    "wrangler": "^4.47.0"
   },
   "dependencies": {
     "@qdrant/js-client-rest": "^1.12.0",
