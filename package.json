@@ -12,7 +12,8 @@
     "test:coverage": "vitest --coverage",
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\"",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "prepare": "husky"
   },
   "keywords": [
     "cloudflare-workers",
@@ -30,6 +31,8 @@
     "@typescript-eslint/eslint-plugin": "^8.17.0",
     "@typescript-eslint/parser": "^8.17.0",
     "eslint": "^9.15.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
     "prettier": "^3.3.3",
     "typescript": "^5.7.2",
     "vitest": "^2.1.5",
@@ -40,5 +43,12 @@
     "googleapis": "^144.0.0",
     "openai": "^4.76.1",
     "tiktoken": "^1.0.18"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write",
+      "vitest related --run"
+    ]
   }
 }

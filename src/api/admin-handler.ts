@@ -44,10 +44,7 @@ export class AdminHandler {
         return await this.handleStats();
       }
 
-      return this.jsonResponse(
-        { error: 'Not found', path },
-        404
-      );
+      return this.jsonResponse({ error: 'Not found', path }, 404);
     } catch (error) {
       console.error('Admin API error:', error);
       return this.jsonResponse(
@@ -113,7 +110,10 @@ export class AdminHandler {
    * Handle GET /admin/stats
    */
   private async handleStats(): Promise<Response> {
-    const collectionInfo = await this.qdrantClient.getCollectionInfo();
+    const collectionInfo = (await this.qdrantClient.getCollectionInfo()) as {
+      name?: string;
+      status?: string;
+    };
     const vectorCount = await this.qdrantClient.countVectors();
 
     return this.jsonResponse({
@@ -126,7 +126,7 @@ export class AdminHandler {
   /**
    * Create JSON response
    */
-  private jsonResponse(data: any, status: number = 200): Response {
+  private jsonResponse(data: unknown, status: number = 200): Response {
     return new Response(JSON.stringify(data, null, 2), {
       status,
       headers: {
@@ -139,10 +139,7 @@ export class AdminHandler {
 /**
  * Validate admin token from request
  */
-export function validateAdminToken(
-  request: Request,
-  adminToken: string
-): boolean {
+export function validateAdminToken(request: Request, adminToken: string): boolean {
   const authHeader = request.headers.get('Authorization');
   const token = authHeader?.replace('Bearer ', '');
   return token === adminToken;

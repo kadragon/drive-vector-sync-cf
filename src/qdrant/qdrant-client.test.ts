@@ -229,7 +229,7 @@ describe('Qdrant Client', () => {
 
   describe('Collection info and stats', () => {
     it('should get collection info', async () => {
-      const info = await client.getCollectionInfo();
+      const info = (await client.getCollectionInfo()) as { name?: string };
 
       expect(info).toBeDefined();
       expect(info.name).toBe('test_collection');

@@ -51,9 +51,7 @@ export class QdrantClient {
     try {
       // Check if collection exists
       const collections = await this.client.getCollections();
-      const exists = collections.collections.some(
-        (c) => c.name === this.collectionName
-      );
+      const exists = collections.collections.some(c => c.name === this.collectionName);
 
       if (exists) {
         console.log(`Collection ${this.collectionName} already exists`);
@@ -98,7 +96,7 @@ export class QdrantClient {
       await withRetry(async () => {
         await this.client.upsert(this.collectionName, {
           wait: true,
-          points: vectors.map((v) => ({
+          points: vectors.map(v => ({
             id: v.id,
             vector: v.vector,
             payload: v.payload,
@@ -148,7 +146,7 @@ export class QdrantClient {
   /**
    * Get collection info
    */
-  async getCollectionInfo(): Promise<any> {
+  async getCollectionInfo(): Promise<unknown> {
     try {
       return await this.client.getCollection(this.collectionName);
     } catch (error) {
@@ -165,7 +163,7 @@ export class QdrantClient {
   async countVectors(): Promise<number> {
     try {
       const info = await this.getCollectionInfo();
-      return info.points_count || 0;
+      return (info as { points_count?: number }).points_count || 0;
     } catch (error) {
       throw new QdrantError('Failed to count vectors', {
         error: (error as Error).message,
@@ -184,9 +182,7 @@ export function generateVectorId(fileId: string, chunkIndex: number): string {
 /**
  * Parse vector ID to extract file ID and chunk index
  */
-export function parseVectorId(
-  vectorId: string
-): { fileId: string; chunkIndex: number } {
+export function parseVectorId(vectorId: string): { fileId: string; chunkIndex: number } {
   const lastUnderscoreIndex = vectorId.lastIndexOf('_');
   const fileId = vectorId.substring(0, lastUnderscoreIndex);
   const chunkIndexStr = vectorId.substring(lastUnderscoreIndex + 1);

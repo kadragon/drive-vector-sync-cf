@@ -6,11 +6,11 @@
  *   task_id: TASK-008
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { KVStateManager, SyncState } from './kv-state-manager';
 
 // Mock KVNamespace
-class MockKVNamespace implements KVNamespace {
+class MockKVNamespace {
   private store = new Map<string, string>();
 
   async get(key: string, type?: 'text' | 'json'): Promise<any> {
@@ -20,7 +20,7 @@ class MockKVNamespace implements KVNamespace {
     return value;
   }
 
-  async put(key: string, value: string, options?: any): Promise<void> {
+  async put(key: string, value: string, _options?: any): Promise<void> {
     this.store.set(key, value);
   }
 

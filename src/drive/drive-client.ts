@@ -7,6 +7,7 @@
  */
 
 import { google, drive_v3 } from 'googleapis';
+import { OAuth2Client } from 'google-auth-library';
 import { DriveError } from '../errors/index.js';
 import { withRetry } from '../errors/index.js';
 
@@ -36,13 +37,10 @@ export interface DriveChange {
  */
 export class DriveClient {
   private drive: drive_v3.Drive;
-  private auth: any;
+  private auth: OAuth2Client;
 
   constructor(credentials: DriveCredentials) {
-    this.auth = new google.auth.OAuth2(
-      credentials.clientId,
-      credentials.clientSecret
-    );
+    this.auth = new google.auth.OAuth2(credentials.clientId, credentials.clientSecret);
 
     this.auth.setCredentials({
       refresh_token: credentials.refreshToken,
@@ -75,9 +73,7 @@ export class DriveClient {
   /**
    * Recursively list all markdown files in a folder
    */
-  async listMarkdownFiles(
-    rootFolderId: string
-  ): Promise<DriveFileMetadata[]> {
+  async listMarkdownFiles(rootFolderId: string): Promise<DriveFileMetadata[]> {
     const files: DriveFileMetadata[] = [];
     const folderPathMap = new Map<string, string>();
     folderPathMap.set(rootFolderId, '');
@@ -108,8 +104,7 @@ export class DriveClient {
         return await this.drive.files.list({
           q: `'${folderId}' in parents and trashed=false`,
           pageToken,
-          fields:
-            'nextPageToken, files(id, name, mimeType, modifiedTime, parents)',
+          fields: 'nextPageToken, files(id, name, mimeType, modifiedTime, parents)',
           pageSize: 100,
         });
       });
@@ -127,10 +122,7 @@ export class DriveClient {
           folderPathMap.set(item.id, currentPath);
           // Recursively scan subfolder
           await this.scanFolder(item.id, files, folderPathMap);
-        } else if (
-          item.name.endsWith('.md') ||
-          item.mimeType === 'text/markdown'
-        ) {
+        } else if (item.name.endsWith('.md') || item.mimeType === 'text/markdown') {
           // Add markdown file
           files.push({
             id: item.id,
@@ -186,19 +178,12 @@ export class DriveClient {
           if (!file || !file.name) continue;
 
           // Only process markdown files
-          if (
-            !file.name.endsWith('.md') &&
-            file.mimeType !== 'text/markdown'
-          ) {
+          if (!file.name.endsWith('.md') && file.mimeType !== 'text/markdown') {
             continue;
           }
 
           // Check if file is in the monitored folder tree
-          const isInFolder = await this.isFileInFolder(
-            file.id!,
-            rootFolderId,
-            file.parents || []
-          );
+          const isInFolder = await this.isFileInFolder(file.id!, rootFolderId, file.parents || []);
 
           if (!isInFolder) {
             continue;

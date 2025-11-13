@@ -110,7 +110,6 @@ describe('TEST-error-handling-1: Retry logic with exponential backoff', () => {
   });
 
   it('should use exponential backoff', async () => {
-    let delays: number[] = [];
     const fn = vi.fn().mockRejectedValue(new Error('Fail'));
 
     const promise = withRetry(fn, {
