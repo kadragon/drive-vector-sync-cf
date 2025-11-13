@@ -36,8 +36,12 @@ export interface DriveChange {
  * Google Drive client with OAuth2 authentication
  */
 export class DriveClient {
+  private static readonly MAX_RECURSION_DEPTH = 10;
+
   private drive: drive_v3.Drive;
   private auth: OAuth2Client;
+  private folderCache: Map<string, { name: string; parents?: string[] }>;
+  private pathCache: Map<string, string>;
 
   constructor(credentials: DriveCredentials) {
     this.auth = new google.auth.OAuth2(credentials.clientId, credentials.clientSecret);
@@ -47,6 +51,16 @@ export class DriveClient {
     });
 
     this.drive = google.drive({ version: 'v3', auth: this.auth });
+    this.folderCache = new Map();
+    this.pathCache = new Map();
+  }
+
+  /**
+   * Clear internal caches (folder metadata and file paths)
+   */
+  clearCache(): void {
+    this.folderCache.clear();
+    this.pathCache.clear();
   }
 
   /**
@@ -190,7 +204,12 @@ export class DriveClient {
           }
 
           // Build file path
-          const path = await this.buildFilePath(file.id!, file.name);
+          const path = await this.buildFilePath(
+            file.id!,
+            file.name,
+            rootFolderId,
+            file.parents || []
+          );
 
           changes.push({
             fileId: file.id!,
@@ -252,7 +271,7 @@ export class DriveClient {
   }
 
   /**
-   * Check if file is in folder tree
+   * Check if file is in folder tree by recursively traversing parent chain
    */
   private async isFileInFolder(
     _fileId: string,
@@ -261,23 +280,186 @@ export class DriveClient {
   ): Promise<boolean> {
     if (!parents || parents.length === 0) return false;
 
-    // Simple check: if any parent matches root folder, consider it in tree
-    // For a more thorough check, we'd need to traverse the folder hierarchy
+    // Check each immediate parent
     for (const parentId of parents) {
-      if (parentId === rootFolderId) return true;
-
-      // TODO: Add recursive parent check if needed
+      if (await this.isAncestorFolder(parentId, rootFolderId, 0)) {
+        return true;
+      }
     }
 
     return false;
   }
 
   /**
-   * Build full file path from file ID
+   * Recursively check if currentFolderId is the targetFolderId or has it as an ancestor
    */
-  private async buildFilePath(_fileId: string, fileName: string): Promise<string> {
-    // For now, just return the file name
-    // TODO: Build full path by traversing parents via Drive API
-    return fileName;
+  private async isAncestorFolder(
+    currentFolderId: string,
+    targetFolderId: string,
+    depth: number
+  ): Promise<boolean> {
+    // Prevent infinite recursion
+    if (depth >= DriveClient.MAX_RECURSION_DEPTH) {
+      return false;
+    }
+
+    if (currentFolderId === targetFolderId) {
+      return true;
+    }
+
+    try {
+      // Get folder info from cache or API
+      let folderInfo = this.folderCache.get(currentFolderId);
+
+      if (!folderInfo) {
+        const response = await withRetry(async () => {
+          return await this.drive.files.get({
+            fileId: currentFolderId,
+            fields: 'id, name, parents',
+          });
+        });
+
+        folderInfo = {
+          name: response.data.name || '',
+          parents: response.data.parents || undefined,
+        };
+
+        this.folderCache.set(currentFolderId, folderInfo);
+      }
+
+      // If no parents, we've reached the root without finding target
+      if (!folderInfo || !folderInfo.parents || folderInfo.parents.length === 0) {
+        return false;
+      }
+
+      // Recursively check each parent
+      for (const parentId of folderInfo.parents) {
+        if (await this.isAncestorFolder(parentId, targetFolderId, depth + 1)) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      // Log error for debugging while maintaining graceful fallback
+      console.error('Failed to check folder ancestry, assuming file not in tree', {
+        currentFolderId,
+        targetFolderId,
+        depth,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Build full file path from file ID by traversing parent folders
+   *
+   * When a file has multiple parents, this method selects the parent that
+   * leads to the rootFolderId to ensure the correct path is built.
+   */
+  private async buildFilePath(
+    fileId: string,
+    fileName: string,
+    rootFolderId: string,
+    parents: string[]
+  ): Promise<string> {
+    // Check cache first
+    if (this.pathCache.has(fileId)) {
+      return this.pathCache.get(fileId)!;
+    }
+
+    try {
+      if (!parents || parents.length === 0) {
+        // No parents, file is at root
+        this.pathCache.set(fileId, fileName);
+        return fileName;
+      }
+
+      // Find the parent that leads to rootFolderId
+      // This handles the case where a file has multiple parents
+      let currentParentId: string | undefined;
+      for (const parentId of parents) {
+        if (await this.isAncestorFolder(parentId, rootFolderId, 0)) {
+          currentParentId = parentId;
+          break;
+        }
+      }
+
+      if (!currentParentId) {
+        // No parent leads to root folder
+        // This shouldn't happen if isFileInFolder passed, but handle gracefully
+        console.warn('No parent leads to root folder, using filename only', {
+          fileId,
+          fileName,
+          rootFolderId,
+          parents,
+        });
+        this.pathCache.set(fileId, fileName);
+        return fileName;
+      }
+
+      // Build path by traversing parent folders
+      const pathParts: string[] = [fileName];
+
+      // Traverse up to MAX_RECURSION_DEPTH levels to prevent infinite loops
+      let depth = 0;
+
+      while (currentParentId && depth < DriveClient.MAX_RECURSION_DEPTH) {
+        // Stop when we reach the root folder (don't include root folder name in path)
+        if (currentParentId === rootFolderId) {
+          break;
+        }
+
+        // Check if parent info is cached
+        let parentInfo = this.folderCache.get(currentParentId);
+
+        if (!parentInfo) {
+          // Fetch parent folder info
+          const parentResponse = await withRetry(async () => {
+            return await this.drive.files.get({
+              fileId: currentParentId,
+              fields: 'id, name, parents',
+            });
+          });
+
+          parentInfo = {
+            name: parentResponse.data.name || '',
+            parents: parentResponse.data.parents || undefined,
+          };
+
+          // Cache parent info
+          this.folderCache.set(currentParentId, parentInfo);
+        }
+
+        // Add parent folder name to path
+        if (parentInfo && parentInfo.name) {
+          pathParts.unshift(parentInfo.name);
+        }
+
+        // Move to next parent
+        if (parentInfo && parentInfo.parents && parentInfo.parents.length > 0) {
+          currentParentId = parentInfo.parents[0];
+        } else {
+          break;
+        }
+
+        depth++;
+      }
+
+      // Build final path
+      const fullPath = pathParts.join('/');
+      this.pathCache.set(fileId, fullPath);
+
+      return fullPath;
+    } catch (error) {
+      // Log error for debugging while maintaining graceful fallback
+      console.error('Failed to build file path, falling back to filename', {
+        fileId,
+        fileName,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return fileName;
+    }
   }
 }
