@@ -139,23 +139,15 @@ describe('DriveClient - Path Building and Filtering', () => {
     it('should use cached path on second request', async () => {
       // First request - will build path
       mockDrive.files.get
-        // isFileInFolder: check folder-1 -> root-folder
+        // isFileInFolder: check folder-1 -> root-folder (caches folder-1)
         .mockResolvedValueOnce({
           data: {
             id: 'folder-1',
             name: 'folder1',
             parents: ['root-folder'],
           },
-        })
-        // buildFilePath: get file info
-        .mockResolvedValueOnce({
-          data: {
-            id: 'file-1',
-            name: 'test.md',
-            parents: ['folder-1'],
-          },
         });
-      // folder-1 already cached
+      // buildFilePath: folder-1 already cached, no additional API calls needed
 
       mockDrive.changes.list.mockResolvedValueOnce({
         data: {
@@ -293,15 +285,8 @@ describe('DriveClient - Path Building and Filtering', () => {
 
   describe('isFileInFolder', () => {
     it('should detect file in root folder (direct parent)', async () => {
-      // isFileInFolder: direct parent is root-folder (no API call needed, matches immediately)
-      // buildFilePath: get file info
-      mockDrive.files.get.mockResolvedValueOnce({
-        data: {
-          id: 'file-1',
-          name: 'test.md',
-          parents: ['root-folder'],
-        },
-      });
+      // isFileInFolder: direct parent is root-folder (matches immediately, no API call)
+      // buildFilePath: parent is root-folder (stops immediately, no API call)
 
       mockDrive.changes.list.mockResolvedValueOnce({
         data: {
@@ -329,7 +314,7 @@ describe('DriveClient - Path Building and Filtering', () => {
     it('should detect file in nested folder (indirect parent)', async () => {
       // Setup: root-folder -> folder1 -> folder2 -> file
       mockDrive.files.get
-        // isFileInFolder: folder-2 -> folder-1 -> root-folder
+        // isFileInFolder: traverse folder-2 -> folder-1 -> root-folder
         .mockResolvedValueOnce({
           data: {
             id: 'folder-2',
@@ -343,22 +328,8 @@ describe('DriveClient - Path Building and Filtering', () => {
             name: 'folder1',
             parents: ['root-folder'],
           },
-        })
-        // buildFilePath: file -> folder-2 (cached) -> folder-1 (cached) -> root-folder
-        .mockResolvedValueOnce({
-          data: {
-            id: 'file-1',
-            name: 'test.md',
-            parents: ['folder-2'],
-          },
-        })
-        .mockResolvedValueOnce({
-          data: {
-            id: 'root-folder',
-            name: 'root',
-            parents: [],
-          },
         });
+      // buildFilePath: folder-2 and folder-1 already cached, no additional API calls
 
       mockDrive.changes.list.mockResolvedValueOnce({
         data: {
@@ -427,22 +398,15 @@ describe('DriveClient - Path Building and Filtering', () => {
     it('should use cached folder hierarchy', async () => {
       // First request
       mockDrive.files.get
-        // isFileInFolder: folder-1
+        // isFileInFolder: folder-1 (caches folder-1)
         .mockResolvedValueOnce({
           data: {
             id: 'folder-1',
             name: 'folder1',
             parents: ['root-folder'],
           },
-        })
-        // buildFilePath: file-1
-        .mockResolvedValueOnce({
-          data: {
-            id: 'file-1',
-            name: 'test.md',
-            parents: ['folder-1'],
-          },
         });
+      // buildFilePath: folder-1 already cached, no additional API calls
 
       mockDrive.changes.list.mockResolvedValueOnce({
         data: {
@@ -465,14 +429,7 @@ describe('DriveClient - Path Building and Filtering', () => {
       await driveClient.fetchChanges('token-start', 'root-folder');
 
       // Second request with same folder hierarchy
-      // folder-1 is cached, so only need file-2
-      mockDrive.files.get.mockResolvedValueOnce({
-        data: {
-          id: 'file-2',
-          name: 'test2.md',
-          parents: ['folder-1'],
-        },
-      });
+      // folder-1 is cached, no API calls needed
 
       mockDrive.changes.list.mockResolvedValueOnce({
         data: {
@@ -505,22 +462,15 @@ describe('DriveClient - Path Building and Filtering', () => {
     it('should clear all caches', async () => {
       // Build up cache
       mockDrive.files.get
-        // isFileInFolder: folder-1
+        // isFileInFolder: folder-1 (caches folder-1 and path)
         .mockResolvedValueOnce({
           data: {
             id: 'folder-1',
             name: 'folder1',
             parents: ['root-folder'],
           },
-        })
-        // buildFilePath: file-1
-        .mockResolvedValueOnce({
-          data: {
-            id: 'file-1',
-            name: 'test.md',
-            parents: ['folder-1'],
-          },
         });
+      // buildFilePath: folder-1 already cached, no additional API calls
 
       mockDrive.changes.list.mockResolvedValueOnce({
         data: {
@@ -545,24 +495,17 @@ describe('DriveClient - Path Building and Filtering', () => {
       // Clear cache
       driveClient.clearCache();
 
-      // Next request should re-fetch everything
+      // Next request should re-fetch folder-1
       mockDrive.files.get
-        // isFileInFolder: folder-1 (re-fetched)
+        // isFileInFolder: folder-1 (re-fetched after cache clear)
         .mockResolvedValueOnce({
           data: {
             id: 'folder-1',
             name: 'folder1',
             parents: ['root-folder'],
           },
-        })
-        // buildFilePath: file-1 (re-fetched)
-        .mockResolvedValueOnce({
-          data: {
-            id: 'file-1',
-            name: 'test.md',
-            parents: ['folder-1'],
-          },
         });
+      // buildFilePath: folder-1 already cached again, no additional API calls
 
       mockDrive.changes.list.mockResolvedValueOnce({
         data: {
