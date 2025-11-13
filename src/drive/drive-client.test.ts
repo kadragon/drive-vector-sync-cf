@@ -133,7 +133,7 @@ describe('DriveClient - Path Building and Filtering', () => {
 
       const result = await driveClient.fetchChanges('token-start', 'root-folder');
       expect(result.changes).toHaveLength(1);
-      expect(result.changes[0].file?.path).toBe('root/folder1/folder2/test.md');
+      expect(result.changes[0].file?.path).toBe('folder1/folder2/test.md');
     });
 
     it('should use cached path on second request', async () => {
@@ -198,14 +198,14 @@ describe('DriveClient - Path Building and Filtering', () => {
 
       await driveClient.fetchChanges('token-123', 'root-folder');
 
-      // Should have called get only 4 times total
-      // First request: isFileInFolder (folder-1), buildFilePath (file-1)
-      // Second request: isFileInFolder uses cache, buildFilePath uses cache but still calls get twice
-      expect(mockDrive.files.get).toHaveBeenCalledTimes(4);
+      // Should have called get only 1 time total
+      // First request: isFileInFolder (folder-1), buildFilePath uses cache
+      // Second request: both use cache (pathCache returns immediately)
+      expect(mockDrive.files.get).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle path building errors gracefully', async () => {
-      // isFileInFolder succeeds
+    it('should build path using cached folder info', async () => {
+      // isFileInFolder succeeds and caches folder-1
       mockDrive.files.get.mockResolvedValueOnce({
         data: {
           id: 'folder-1',
@@ -213,9 +213,6 @@ describe('DriveClient - Path Building and Filtering', () => {
           parents: ['root-folder'],
         },
       });
-
-      // buildFilePath fails
-      mockDrive.files.get.mockRejectedValueOnce(new Error('API error'));
 
       mockDrive.changes.list.mockResolvedValueOnce({
         data: {
@@ -236,9 +233,61 @@ describe('DriveClient - Path Building and Filtering', () => {
       });
 
       const result = await driveClient.fetchChanges('token-start', 'root-folder');
-      // Should fall back to just filename
+      // buildFilePath uses cached folder info from isFileInFolder
       expect(result.changes).toHaveLength(1);
-      expect(result.changes[0].file?.path).toBe('test.md');
+      expect(result.changes[0].file?.path).toBe('folder1/test.md');
+    });
+
+    it('should select correct parent when file has multiple parents', async () => {
+      // File has two parents: folder-A (under root-folder) and folder-B (under other-root)
+      // Setup: root-folder -> folder-A
+      mockDrive.files.get
+        // isFileInFolder: check folder-B first
+        .mockResolvedValueOnce({
+          data: {
+            id: 'folder-B',
+            name: 'folderB',
+            parents: ['other-root'],
+          },
+        })
+        .mockResolvedValueOnce({
+          data: {
+            id: 'other-root',
+            name: 'other',
+            parents: [],
+          },
+        })
+        // isFileInFolder: check folder-A second (this matches!)
+        .mockResolvedValueOnce({
+          data: {
+            id: 'folder-A',
+            name: 'folderA',
+            parents: ['root-folder'],
+          },
+        });
+
+      mockDrive.changes.list.mockResolvedValueOnce({
+        data: {
+          changes: [
+            {
+              fileId: 'file-1',
+              file: {
+                id: 'file-1',
+                name: 'test.md',
+                mimeType: 'text/markdown',
+                modifiedTime: '2023-01-01T00:00:00Z',
+                parents: ['folder-B', 'folder-A'], // Multiple parents!
+              },
+            },
+          ],
+          newStartPageToken: 'token-123',
+        },
+      });
+
+      const result = await driveClient.fetchChanges('token-start', 'root-folder');
+      expect(result.changes).toHaveLength(1);
+      // Should use folder-A path, not folder-B
+      expect(result.changes[0].file?.path).toBe('folderA/test.md');
     });
   });
 
@@ -445,10 +494,10 @@ describe('DriveClient - Path Building and Filtering', () => {
 
       await driveClient.fetchChanges('token-123', 'root-folder');
 
-      // folder-1 should be cached, so 5 get calls total
-      // First request: isFileInFolder (folder-1), buildFilePath (file-1)
-      // Second request: isFileInFolder uses cache, buildFilePath (file-2) + 2 more calls
-      expect(mockDrive.files.get).toHaveBeenCalledTimes(5);
+      // folder-1 should be cached, so 1 get call total
+      // First request: isFileInFolder (folder-1), buildFilePath uses cache
+      // Second request: both use cache (folder cache + path cache)
+      expect(mockDrive.files.get).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -535,10 +584,10 @@ describe('DriveClient - Path Building and Filtering', () => {
 
       await driveClient.fetchChanges('token-123', 'root-folder');
 
-      // Should have called get 6 times total
-      // First request: isFileInFolder (folder-1), buildFilePath (file-1)
-      // Second request after cache clear: isFileInFolder (folder-1), buildFilePath (file-1) + 2 more
-      expect(mockDrive.files.get).toHaveBeenCalledTimes(6);
+      // Should have called get 2 times total
+      // First request: isFileInFolder (folder-1)
+      // Second request after cache clear: isFileInFolder (folder-1) again
+      expect(mockDrive.files.get).toHaveBeenCalledTimes(2);
     });
   });
 });

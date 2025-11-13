@@ -202,7 +202,12 @@ export class DriveClient {
           }
 
           // Build file path
-          const path = await this.buildFilePath(file.id!, file.name);
+          const path = await this.buildFilePath(
+            file.id!,
+            file.name,
+            rootFolderId,
+            file.parents || []
+          );
 
           changes.push({
             fileId: file.id!,
@@ -348,38 +353,64 @@ export class DriveClient {
 
   /**
    * Build full file path from file ID by traversing parent folders
+   *
+   * When a file has multiple parents, this method selects the parent that
+   * leads to the rootFolderId to ensure the correct path is built.
    */
-  private async buildFilePath(fileId: string, fileName: string): Promise<string> {
+  private async buildFilePath(
+    fileId: string,
+    fileName: string,
+    rootFolderId: string,
+    parents: string[]
+  ): Promise<string> {
     // Check cache first
     if (this.pathCache.has(fileId)) {
       return this.pathCache.get(fileId)!;
     }
 
     try {
-      // Get file metadata to access parents
-      const response = await withRetry(async () => {
-        return await this.drive.files.get({
-          fileId,
-          fields: 'id, name, parents',
-        });
-      });
-
-      const file = response.data;
-      if (!file.parents || file.parents.length === 0) {
+      if (!parents || parents.length === 0) {
         // No parents, file is at root
+        this.pathCache.set(fileId, fileName);
+        return fileName;
+      }
+
+      // Find the parent that leads to rootFolderId
+      // This handles the case where a file has multiple parents
+      let currentParentId: string | undefined;
+      for (const parentId of parents) {
+        if (await this.isAncestorFolder(parentId, rootFolderId, 0)) {
+          currentParentId = parentId;
+          break;
+        }
+      }
+
+      if (!currentParentId) {
+        // No parent leads to root folder
+        // This shouldn't happen if isFileInFolder passed, but handle gracefully
+        console.warn('No parent leads to root folder, using filename only', {
+          fileId,
+          fileName,
+          rootFolderId,
+          parents,
+        });
         this.pathCache.set(fileId, fileName);
         return fileName;
       }
 
       // Build path by traversing parent folders
       const pathParts: string[] = [fileName];
-      let currentParentId = file.parents[0];
 
       // Traverse up to 10 levels to prevent infinite loops
       let depth = 0;
       const maxDepth = 10;
 
       while (currentParentId && depth < maxDepth) {
+        // Stop when we reach the root folder (don't include root folder name in path)
+        if (currentParentId === rootFolderId) {
+          break;
+        }
+
         // Check if parent info is cached
         let parentInfo = this.folderCache.get(currentParentId);
 
