@@ -18,6 +18,7 @@ vi.mock('@qdrant/js-client-rest', () => {
       createCollection: vi.fn().mockResolvedValue({}),
       upsert: vi.fn().mockResolvedValue({}),
       delete: vi.fn().mockResolvedValue({}),
+      scroll: vi.fn().mockResolvedValue({ points: [] }),
       getCollection: vi.fn().mockResolvedValue({
         name: 'test_collection',
         points_count: 100,
@@ -98,6 +99,7 @@ describe('Qdrant Client', () => {
           file_name: 'test.md',
           file_path: 'docs/test.md',
           chunk_index: 0,
+          chunk_hash: 'abc123def456',
           last_modified: '2025-11-13T00:00:00Z',
           text: 'Test content',
         },
@@ -115,6 +117,7 @@ describe('Qdrant Client', () => {
               file_id: 'file123',
               file_name: 'test.md',
               chunk_index: 0,
+              chunk_hash: 'abc123def456',
             }),
           },
         ],
@@ -133,6 +136,7 @@ describe('Qdrant Client', () => {
             file_name: 'long.md',
             file_path: 'docs/long.md',
             chunk_index: 0,
+            chunk_hash: 'hash0',
             last_modified: '2025-11-13T00:00:00Z',
           },
         },
@@ -144,6 +148,7 @@ describe('Qdrant Client', () => {
             file_name: 'long.md',
             file_path: 'docs/long.md',
             chunk_index: 1,
+            chunk_hash: 'hash1',
             last_modified: '2025-11-13T00:00:00Z',
           },
         },
@@ -155,6 +160,7 @@ describe('Qdrant Client', () => {
             file_name: 'long.md',
             file_path: 'docs/long.md',
             chunk_index: 2,
+            chunk_hash: 'hash2',
             last_modified: '2025-11-13T00:00:00Z',
           },
         },
@@ -170,6 +176,69 @@ describe('Qdrant Client', () => {
           expect.objectContaining({ id: 'file456_2' }),
         ]),
       });
+    });
+  });
+
+  describe('Get vectors by file_id', () => {
+    it('should fetch all vectors for a given file_id', async () => {
+      const mockVectors = [
+        {
+          id: 'file789_0',
+          vector: new Array(3072).fill(0.1),
+          payload: {
+            file_id: 'file789',
+            file_name: 'test.md',
+            file_path: 'docs/test.md',
+            chunk_index: 0,
+            chunk_hash: 'hash0',
+            last_modified: '2025-11-13T00:00:00Z',
+          },
+        },
+        {
+          id: 'file789_1',
+          vector: new Array(3072).fill(0.2),
+          payload: {
+            file_id: 'file789',
+            file_name: 'test.md',
+            file_path: 'docs/test.md',
+            chunk_index: 1,
+            chunk_hash: 'hash1',
+            last_modified: '2025-11-13T00:00:00Z',
+          },
+        },
+      ];
+
+      mockQdrantClient.scroll.mockResolvedValueOnce({ points: mockVectors });
+
+      const vectors = await client.getVectorsByFileId('file789');
+
+      expect(mockQdrantClient.scroll).toHaveBeenCalledWith('test_collection', {
+        filter: {
+          must: [
+            {
+              key: 'file_id',
+              match: {
+                value: 'file789',
+              },
+            },
+          ],
+        },
+        with_payload: true,
+        with_vector: true,
+        limit: 1000,
+      });
+
+      expect(vectors).toHaveLength(2);
+      expect(vectors[0].payload.chunk_hash).toBe('hash0');
+      expect(vectors[1].payload.chunk_hash).toBe('hash1');
+    });
+
+    it('should return empty array if no vectors found', async () => {
+      mockQdrantClient.scroll.mockResolvedValueOnce({ points: [] });
+
+      const vectors = await client.getVectorsByFileId('nonexistent');
+
+      expect(vectors).toHaveLength(0);
     });
   });
 
@@ -203,6 +272,7 @@ describe('Qdrant Client', () => {
           file_name: `test_${i}.md`,
           file_path: `docs/test_${i}.md`,
           chunk_index: 0,
+          chunk_hash: `hash_${i}`,
           last_modified: '2025-11-13T00:00:00Z',
         },
       }));
