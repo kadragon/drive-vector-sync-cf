@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run type check on all files
+echo "Running type check..."
+npm run type-check
+
+# Run lint-staged for changed files
+echo "Running lint-staged..."
+npx lint-staged

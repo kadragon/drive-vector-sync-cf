@@ -10,6 +10,14 @@
  *   task_id: TASK-009, TASK-011
  */
 
+import { DriveClient } from './drive/drive-client.js';
+import { EmbeddingClient } from './embedding/embedding-client.js';
+import { QdrantClient } from './qdrant/qdrant-client.js';
+import { KVStateManager } from './state/kv-state-manager.js';
+import { SyncOrchestrator } from './sync/sync-orchestrator.js';
+import { AdminHandler, validateAdminToken } from './api/admin-handler.js';
+import { logError } from './errors/index.js';
+
 export interface Env {
   // KV Namespace
   SYNC_STATE: KVNamespace;
@@ -32,6 +40,57 @@ export interface Env {
   QDRANT_COLLECTION_NAME: string;
 }
 
+/**
+ * Initialize all clients and orchestrator
+ */
+function initializeServices(env: Env) {
+  const driveClient = new DriveClient({
+    clientId: env.GOOGLE_CLIENT_ID,
+    clientSecret: env.GOOGLE_CLIENT_SECRET,
+    refreshToken: env.GOOGLE_REFRESH_TOKEN,
+  });
+
+  const embeddingClient = new EmbeddingClient({
+    apiKey: env.OPENAI_API_KEY,
+  });
+
+  const qdrantClient = new QdrantClient({
+    url: env.QDRANT_URL,
+    apiKey: env.QDRANT_API_KEY,
+    collectionName: env.QDRANT_COLLECTION_NAME,
+  });
+
+  const stateManager = new KVStateManager(env.SYNC_STATE);
+
+  const orchestrator = new SyncOrchestrator(
+    driveClient,
+    embeddingClient,
+    qdrantClient,
+    stateManager,
+    {
+      chunkSize: parseInt(env.CHUNK_SIZE || '2000', 10),
+      maxBatchSize: parseInt(env.MAX_BATCH_SIZE || '32', 10),
+      maxConcurrency: parseInt(env.MAX_CONCURRENCY || '4', 10),
+    }
+  );
+
+  const adminHandler = new AdminHandler(
+    orchestrator,
+    stateManager,
+    qdrantClient,
+    env.GOOGLE_ROOT_FOLDER_ID
+  );
+
+  return {
+    driveClient,
+    embeddingClient,
+    qdrantClient,
+    stateManager,
+    orchestrator,
+    adminHandler,
+  };
+}
+
 export default {
   /**
    * Scheduled cron trigger handler
@@ -39,19 +98,39 @@ export default {
   async scheduled(
     event: ScheduledEvent,
     env: Env,
-    ctx: ExecutionContext
+    _ctx: ExecutionContext
   ): Promise<void> {
-    console.log('Scheduled sync triggered at:', new Date(event.scheduledTime).toISOString());
+    console.log(
+      'Scheduled sync triggered at:',
+      new Date(event.scheduledTime).toISOString()
+    );
 
-    // TODO: Implement sync pipeline orchestration
-    // 1. Check for concurrent execution
-    // 2. Load state from KV
-    // 3. Fetch Drive changes
-    // 4. Process embeddings
-    // 5. Sync to Qdrant
-    // 6. Save new state
+    const { orchestrator, stateManager } = initializeServices(env);
 
-    console.log('Scheduled sync completed');
+    try {
+      // 1. Check for concurrent execution
+      const lockAcquired = await stateManager.acquireLock();
+
+      if (!lockAcquired) {
+        console.log('Sync already running, skipping this execution');
+        return;
+      }
+
+      try {
+        // 2. Run incremental sync
+        const result = await orchestrator.runIncrementalSync(
+          env.GOOGLE_ROOT_FOLDER_ID
+        );
+
+        console.log('Scheduled sync completed:', result);
+      } finally {
+        // 3. Release lock
+        await stateManager.releaseLock();
+      }
+    } catch (error) {
+      console.error('Scheduled sync failed:', error);
+      logError(error as Error);
+    }
   },
 
   /**
@@ -60,7 +139,7 @@ export default {
   async fetch(
     request: Request,
     env: Env,
-    ctx: ExecutionContext
+    _ctx: ExecutionContext
   ): Promise<Response> {
     const url = new URL(request.url);
 
@@ -73,24 +152,16 @@ export default {
 
     // Admin endpoints require authentication
     if (url.pathname.startsWith('/admin')) {
-      const authHeader = request.headers.get('Authorization');
-      const token = authHeader?.replace('Bearer ', '');
-
-      if (token !== env.ADMIN_TOKEN) {
+      if (!validateAdminToken(request, env.ADMIN_TOKEN)) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
           status: 401,
           headers: { 'Content-Type': 'application/json' },
         });
       }
 
-      // TODO: Implement admin endpoints
-      // POST /admin/resync - Trigger full resync
-      // GET /admin/status - Get sync status
-
-      return new Response(JSON.stringify({ error: 'Not implemented' }), {
-        status: 501,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      // Handle admin API requests
+      const { adminHandler } = initializeServices(env);
+      return await adminHandler.handleRequest(request);
     }
 
     return new Response(JSON.stringify({ error: 'Not found' }), {
