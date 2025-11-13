@@ -187,7 +187,9 @@ export function generateVectorId(fileId: string, chunkIndex: number): string {
 export function parseVectorId(
   vectorId: string
 ): { fileId: string; chunkIndex: number } {
-  const [fileId, chunkIndexStr] = vectorId.split('_');
+  const lastUnderscoreIndex = vectorId.lastIndexOf('_');
+  const fileId = vectorId.substring(0, lastUnderscoreIndex);
+  const chunkIndexStr = vectorId.substring(lastUnderscoreIndex + 1);
   return {
     fileId,
     chunkIndex: parseInt(chunkIndexStr, 10),
