@@ -1,243 +1,160 @@
 # Task Backlog
-# All pending tasks sorted by priority and dependencies
+# Remaining pending tasks sorted by priority
 
 tasks:
-  - task_id: TASK-001
-    spec_id: SPEC-drive-integration-1
-    title: "Implement Google Drive OAuth2 authentication"
+  - task_id: TASK-014
+    spec_id: null
+    title: "Write E2E integration tests"
     priority: 1
     status: pending
     dependencies: []
-    estimated_effort: 3 hours
-    description: |
-      Set up Google OAuth2 client with refresh token flow.
-      Store credentials in Cloudflare Secrets.
-      Implement token refresh logic.
-    test_refs:
-      - TEST-drive-integration-1
-
-  - task_id: TASK-002
-    spec_id: SPEC-drive-integration-1
-    title: "Implement recursive Drive folder scanning"
-    priority: 1
-    dependencies:
-      - TASK-001
-    estimated_effort: 4 hours
-    description: |
-      Build recursive folder scanner that discovers all .md files.
-      Handle pagination properly.
-      Extract metadata: id, name, path, modifiedTime.
-    test_refs:
-      - TEST-drive-integration-2
-      - TEST-drive-integration-5
-
-  - task_id: TASK-003
-    spec_id: SPEC-drive-integration-1
-    title: "Implement Drive changes API integration"
-    priority: 1
-    dependencies:
-      - TASK-001
-      - TASK-008
-    estimated_effort: 4 hours
-    description: |
-      Use changes.list API with startPageToken.
-      Detect added/modified/deleted files.
-      Handle pagination for large changesets.
-    test_refs:
-      - TEST-drive-integration-3
-      - TEST-drive-integration-6
-
-  - task_id: TASK-004
-    spec_id: SPEC-embedding-pipeline-1
-    title: "Implement text chunking with token counting"
-    priority: 2
-    dependencies: []
-    estimated_effort: 3 hours
-    description: |
-      Integrate tiktoken for accurate token counting.
-      Implement chunking logic at 2000 token boundaries.
-      Preserve chunk metadata (index, token count).
-    test_refs:
-      - TEST-embedding-pipeline-2
-      - TEST-embedding-pipeline-6
-
-  - task_id: TASK-005
-    spec_id: SPEC-embedding-pipeline-1
-    title: "Implement OpenAI embedding batch processing"
-    priority: 2
-    dependencies:
-      - TASK-004
-    estimated_effort: 3 hours
-    description: |
-      Integrate OpenAI API with text-embedding-3-large.
-      Implement batch embedding (16-32 chunks per request).
-      Validate vector dimensions (3072).
-    test_refs:
-      - TEST-embedding-pipeline-1
-      - TEST-embedding-pipeline-3
-      - TEST-embedding-pipeline-4
-      - TEST-embedding-pipeline-5
-
-  - task_id: TASK-006
-    spec_id: SPEC-qdrant-sync-1
-    title: "Initialize Qdrant collection with schema"
-    priority: 1
-    dependencies: []
-    estimated_effort: 2 hours
-    description: |
-      Create Qdrant client with API authentication.
-      Implement collection initialization with proper schema.
-      Handle collection already exists scenario.
-    test_refs:
-      - TEST-qdrant-sync-1
-
-  - task_id: TASK-007
-    spec_id: SPEC-qdrant-sync-1
-    title: "Implement Qdrant vector upsert and delete operations"
-    priority: 2
-    dependencies:
-      - TASK-006
-    estimated_effort: 4 hours
-    description: |
-      Implement batch upsert for vectors with metadata.
-      Implement delete by file_id filter.
-      Generate proper vector IDs: {file_id}_{chunk_index}.
-    test_refs:
-      - TEST-qdrant-sync-2
-      - TEST-qdrant-sync-3
-      - TEST-qdrant-sync-4
-      - TEST-qdrant-sync-5
-      - TEST-qdrant-sync-6
-
-  - task_id: TASK-008
-    spec_id: SPEC-state-management-1
-    title: "Implement KV state management"
-    priority: 1
-    dependencies: []
-    estimated_effort: 2 hours
-    description: |
-      Create KV state manager for startPageToken persistence.
-      Implement get/set operations with JSON serialization.
-      Handle first run (no state) scenario.
-    test_refs:
-      - TEST-state-management-1
-      - TEST-state-management-2
-      - TEST-state-management-3
-      - TEST-state-management-4
-
-  - task_id: TASK-009
-    spec_id: SPEC-scheduling-1
-    title: "Implement cron trigger handler"
-    priority: 3
-    dependencies:
-      - TASK-012
-    estimated_effort: 2 hours
-    description: |
-      Configure cron trigger in wrangler.toml.
-      Implement scheduled event handler.
-      Add concurrency check to prevent parallel runs.
-    test_refs:
-      - TEST-scheduling-1
-      - TEST-scheduling-2
-      - TEST-scheduling-3
-      - TEST-scheduling-4
-
-  - task_id: TASK-010
-    spec_id: SPEC-error-handling-1
-    title: "Implement comprehensive error handling"
-    priority: 2
-    dependencies: []
-    estimated_effort: 4 hours
-    description: |
-      Create retry logic with exponential backoff.
-      Implement error logging with structured data.
-      Handle OAuth token refresh.
-      Build error summary reporting.
-    test_refs:
-      - TEST-error-handling-1
-      - TEST-error-handling-2
-      - TEST-error-handling-3
-      - TEST-error-handling-4
-      - TEST-error-handling-5
-      - TEST-error-handling-6
-
-  - task_id: TASK-011
-    spec_id: SPEC-admin-api-1
-    title: "Implement admin API endpoints"
-    priority: 3
-    dependencies:
-      - TASK-012
-    estimated_effort: 3 hours
-    description: |
-      Create admin authentication middleware.
-      Implement POST /admin/resync endpoint.
-      Implement GET /admin/status endpoint.
-      Add proper HTTP status codes and responses.
-    test_refs:
-      - TEST-admin-api-1
-      - TEST-admin-api-2
-      - TEST-admin-api-3
-      - TEST-admin-api-4
-      - TEST-admin-api-5
-
-  - task_id: TASK-012
-    spec_id: null
-    title: "Build main sync orchestrator"
-    priority: 2
-    dependencies:
-      - TASK-003
-      - TASK-005
-      - TASK-007
-      - TASK-008
-      - TASK-010
-    estimated_effort: 5 hours
-    description: |
-      Create main sync pipeline that orchestrates:
-      1. Load state (startPageToken)
-      2. Fetch Drive changes
-      3. Download file contents
-      4. Generate embeddings
-      5. Sync to Qdrant
-      6. Save new state
-      Implement parallel processing with concurrency control.
-    test_refs: []
-
-  - task_id: TASK-013
-    spec_id: null
-    title: "Set up project infrastructure"
-    priority: 1
-    dependencies: []
-    estimated_effort: 2 hours
-    description: |
-      Initialize Cloudflare Workers project with Wrangler.
-      Configure TypeScript and build system.
-      Set up Vitest for testing.
-      Create wrangler.toml with KV bindings and secrets.
-    test_refs: []
-
-  - task_id: TASK-014
-    spec_id: null
-    title: "Write integration tests"
-    priority: 3
-    dependencies:
-      - TASK-012
     estimated_effort: 4 hours
     description: |
       Create end-to-end integration tests.
       Mock external APIs (Drive, OpenAI, Qdrant).
-      Test complete sync pipeline.
+      Test complete sync pipeline with real-world scenarios.
+      Verify error handling in full flow.
+    test_refs: []
+    notes: "Unit tests completed (66 tests). E2E tests with mocked services needed."
+
+  - task_id: TASK-021
+    spec_id: null
+    title: "Production deployment"
+    priority: 1
+    status: pending
+    dependencies:
+      - TASK-014
+      - TASK-015
+    estimated_effort: 3 hours
+    description: |
+      Deploy to Cloudflare Workers production.
+      Configure all secrets via wrangler.
+      Create KV namespace in production.
+      Set up Qdrant collection in production.
+      Test with real Google Drive folder.
+      Monitor first sync execution.
     test_refs: []
 
   - task_id: TASK-015
     spec_id: null
     title: "Create deployment documentation"
-    priority: 4
+    priority: 2
+    status: pending
     dependencies:
       - TASK-014
     estimated_effort: 2 hours
     description: |
       Document setup instructions.
-      Document secrets configuration.
+      Document secrets configuration (wrangler secret put).
+      Document KV namespace setup.
       Document manual resync procedures.
       Create troubleshooting guide.
+      Add monitoring and alerting setup guide.
+    test_refs: []
+
+  - task_id: TASK-016
+    spec_id: null
+    title: "Implement Drive path building"
+    priority: 3
+    status: pending
+    dependencies: []
+    estimated_effort: 2 hours
+    description: |
+      Enhance buildFilePath() to construct full folder paths.
+      Traverse parent folders to build complete file paths.
+      Currently returns only file name - needs full path reconstruction.
+      Cache folder path mappings for performance.
+    test_refs: []
+    notes: "TODO in src/drive/drive-client.ts:293"
+
+  - task_id: TASK-017
+    spec_id: null
+    title: "Improve file filtering in changes API"
+    priority: 3
+    status: pending
+    dependencies: []
+    estimated_effort: 2 hours
+    description: |
+      Enhance isFileInFolder() with recursive parent checking.
+      Currently only checks direct parent match.
+      Need to traverse entire parent chain for accuracy.
+      Cache folder hierarchy for performance.
+    test_refs: []
+    notes: "TODO in src/drive/drive-client.ts:269"
+
+  - task_id: TASK-018
+    spec_id: null
+    title: "Add monitoring and alerting"
+    priority: 2
+    status: pending
+    dependencies:
+      - TASK-021
+    estimated_effort: 3 hours
+    description: |
+      Integrate error tracking (e.g., Sentry).
+      Add performance monitoring.
+      Set up Slack/Discord webhooks for error notifications.
+      Track sync success/failure metrics.
+      Monitor sync duration and file processing rates.
+    test_refs: []
+    notes: "Mentioned in error-handling spec but not yet implemented"
+
+  - task_id: TASK-019
+    spec_id: null
+    title: "Add support for additional file types"
+    priority: 4
+    status: pending
+    dependencies: []
+    estimated_effort: 4 hours
+    description: |
+      Extend beyond .md files.
+      Support .txt files.
+      Add .pdf text extraction.
+      Add .docx text extraction.
+      Add content extraction for Google Docs native format.
+      Update filtering logic and tests.
+    test_refs: []
+
+  - task_id: TASK-020
+    spec_id: null
+    title: "Implement chunking with overlap"
+    priority: 4
+    status: pending
+    dependencies: []
+    estimated_effort: 2 hours
+    description: |
+      Add configurable overlap between chunks (e.g., 200 tokens).
+      Improve semantic coherence across chunk boundaries.
+      Currently no overlap (noted in embedding-pipeline spec).
+      Add tests for overlap functionality.
+    test_refs: []
+    notes: "Enhancement mentioned in SPEC-embedding-pipeline-1"
+
+  - task_id: TASK-022
+    spec_id: null
+    title: "Add incremental embedding optimization"
+    priority: 4
+    status: pending
+    dependencies: []
+    estimated_effort: 3 hours
+    description: |
+      Cache embeddings for unchanged chunks.
+      Only re-embed modified chunks when file changes.
+      Reduce API calls and processing time.
+      Store chunk hash with vectors for change detection.
+    test_refs: []
+
+  - task_id: TASK-023
+    spec_id: null
+    title: "Add rate limiting and cost tracking"
+    priority: 3
+    status: pending
+    dependencies:
+      - TASK-021
+    estimated_effort: 2 hours
+    description: |
+      Implement rate limiting for API calls.
+      Track OpenAI API usage and costs.
+      Track Drive API quota usage.
+      Add dashboard for cost monitoring.
     test_refs: []
