@@ -27,6 +27,10 @@ export function chunkText(
   overlapTokens: number = 200
 ): ChunkResult[] {
   // Validate parameters
+  if (maxTokens <= 0) {
+    throw new Error('maxTokens must be positive');
+  }
+
   if (overlapTokens < 0) {
     throw new Error('overlapTokens must be non-negative');
   }
@@ -34,10 +38,6 @@ export function chunkText(
   // Auto-adjust overlap if it's too large for the given maxTokens
   // Overlap should not exceed 50% of maxTokens to ensure progress
   const effectiveOverlap = Math.min(overlapTokens, Math.floor(maxTokens * 0.5));
-
-  if (effectiveOverlap >= maxTokens) {
-    throw new Error('overlapTokens must be less than maxTokens');
-  }
 
   // Get encoding for text-embedding-3-large (uses cl100k_base)
   const encoding = get_encoding('cl100k_base');

@@ -233,12 +233,11 @@ const code = 'example';
         const currentChunk = chunks[i].text;
         const nextChunk = chunks[i + 1].text;
 
-        // Get last few words from current chunk
-        const currentWords = currentChunk.trim().split(/\s+/);
-        const lastWords = currentWords.slice(-10).join(' ');
+        // Extract first 50 characters from next chunk
+        const nextChunkStart = nextChunk.substring(0, Math.min(50, nextChunk.length));
 
-        // Next chunk should start with some of these words (overlap)
-        const hasOverlap = nextChunk.includes(lastWords.split(/\s+/)[0]);
+        // This substring should exist in the current chunk (overlap verification)
+        const hasOverlap = currentChunk.includes(nextChunkStart);
         expect(hasOverlap).toBe(true);
       }
     });
@@ -271,7 +270,13 @@ const code = 'example';
       expect(() => chunkText(text, 1000, -10)).toThrow('overlapTokens must be non-negative');
     });
 
-    it('should improve semantic coherence across chunk boundaries', () => {
+    it('should throw error for non-positive maxTokens', () => {
+      const text = 'test text';
+      expect(() => chunkText(text, 0, 100)).toThrow('maxTokens must be positive');
+      expect(() => chunkText(text, -100, 100)).toThrow('maxTokens must be positive');
+    });
+
+    it('should produce valid, non-empty chunks with overlap', () => {
       // Create a text with clear sentence structure
       const paragraph = 'This is a test sentence. '.repeat(400); // ~400 sentences
       const chunks = chunkText(paragraph, 1000, 200);
