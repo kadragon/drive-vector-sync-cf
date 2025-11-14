@@ -1,0 +1,112 @@
+spec_id: SPEC-monitoring-1
+title: "Monitoring, Alerting, and Cost Tracking"
+description: "Comprehensive monitoring, metrics collection, alerting, and cost tracking for sync operations"
+
+given_when_then:
+  - given: "Sync operation runs"
+    when: "Files are processed and vectors are upserted"
+    then: "Metrics should be collected for all operations (files, vectors, chunks, API calls)"
+
+  - given: "Sync completes successfully"
+    when: "All operations finish"
+    then: "Success metrics should be sent to webhook if configured"
+
+  - given: "Sync fails with error"
+    when: "Critical error occurs"
+    then: "Failure alert with error details should be sent to webhook"
+
+  - given: "Performance degrades below threshold"
+    when: "Processing rate drops significantly"
+    then: "Performance alert should be sent to webhook"
+
+  - given: "API calls are made"
+    when: "System interacts with Drive, OpenAI, or Qdrant"
+    then: "Cost should be tracked and summarized"
+
+  - given: "Rate limit approaches"
+    when: "API calls reach threshold"
+    then: "System should delay requests to prevent quota exhaustion"
+
+acceptance_tests:
+  - id: TEST-monitoring-1
+    desc: "Collect file processing metrics (added/modified/deleted)"
+
+  - id: TEST-monitoring-2
+    desc: "Track vector operations (upsert/delete counts)"
+
+  - id: TEST-monitoring-3
+    desc: "Count API calls for each service"
+
+  - id: TEST-monitoring-4
+    desc: "Calculate performance metrics (throughput, duration)"
+
+  - id: TEST-monitoring-5
+    desc: "Send Slack webhook on sync completion"
+
+  - id: TEST-monitoring-6
+    desc: "Send Discord webhook on sync completion"
+
+  - id: TEST-monitoring-7
+    desc: "Send failure alert with error details"
+
+  - id: TEST-monitoring-8
+    desc: "Send performance degradation alert"
+
+  - id: TEST-monitoring-9
+    desc: "Track OpenAI embedding costs accurately"
+
+  - id: TEST-monitoring-10
+    desc: "Monitor Drive API quota usage"
+
+  - id: TEST-monitoring-11
+    desc: "Count Qdrant operations"
+
+  - id: TEST-monitoring-12
+    desc: "Apply rate limiting to prevent quota exhaustion"
+
+dependencies:
+  governance:
+    - "env.yaml: monitoring configuration"
+    - "patterns.md: observability patterns"
+
+linked_tasks:
+  - TASK-018
+  - TASK-023
+
+implementation_notes:
+  - "MetricsCollector tracks all sync operations in real-time"
+  - "AlertingService supports Slack and Discord webhooks"
+  - "CostTracker calculates costs based on API pricing"
+  - "RateLimiter uses token bucket algorithm for rate limiting"
+  - "All metrics are logged to console for CloudWatch integration"
+  - "Webhook alerts are optional (configured via environment variables)"
+  - "Cost tracking is always enabled for visibility"
+
+environment_variables:
+  - name: WEBHOOK_URL
+    required: false
+    description: "Webhook endpoint URL for alerts"
+
+  - name: WEBHOOK_TYPE
+    required: false
+    default: "slack"
+    allowed_values: ["slack", "discord"]
+    description: "Type of webhook service"
+
+  - name: PERFORMANCE_THRESHOLD
+    required: false
+    default: "0.5"
+    description: "Files per second threshold for performance alerts"
+
+modules:
+  - path: "src/monitoring/metrics.ts"
+    description: "Metrics collection and performance tracking"
+
+  - path: "src/monitoring/alerting.ts"
+    description: "Webhook-based alerting service"
+
+  - path: "src/monitoring/cost-tracker.ts"
+    description: "API usage and cost tracking"
+
+  - path: "src/monitoring/rate-limiter.ts"
+    description: "Token bucket rate limiting"

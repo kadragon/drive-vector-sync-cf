@@ -222,3 +222,110 @@ completed_tasks:
       Improves semantic coherence across chunk boundaries.
       All 24 chunking tests passing.
       Backward compatible - existing code works without changes.
+
+  - task_id: TASK-018
+    spec_id: null
+    title: "Add monitoring and alerting"
+    completed_at: "2025-11-14T01:20:00Z"
+    duration: "2 hours"
+    outcome: "Comprehensive monitoring, metrics collection, and webhook-based alerting"
+    tests_passed:
+      - 18 metrics tests
+      - All integration tests passing (231 total)
+    notes: |
+      Implemented MetricsCollector for comprehensive sync metrics tracking:
+      - File processing statistics (added/modified/deleted)
+      - Vector operations tracking (upsert/delete counts)
+      - API call counters (Drive, OpenAI, Qdrant)
+      - Performance metrics (processing time, throughput, files/sec, chunks/sec)
+      - Error tracking with context
+
+      Implemented AlertingService for webhook-based notifications:
+      - Support for Slack and Discord webhooks
+      - Sync completion alerts with detailed metrics
+      - Sync failure alerts with error details
+      - Performance degradation warnings
+      - Customizable message formatting for each platform
+
+      Integrated into SyncOrchestrator:
+      - Metrics collected throughout full and incremental sync
+      - Automatic alert sending on sync completion/failure
+      - Performance monitoring with configurable thresholds
+      - Cost tracking summary in console logs
+
+      Added optional environment variables:
+      - WEBHOOK_URL: Webhook endpoint for alerts
+      - WEBHOOK_TYPE: 'slack' or 'discord'
+      - PERFORMANCE_THRESHOLD: Files/sec threshold for alerts
+
+  - task_id: TASK-023
+    spec_id: null
+    title: "Add rate limiting and cost tracking"
+    completed_at: "2025-11-14T01:20:00Z"
+    duration: "1.5 hours"
+    outcome: "Cost tracking and rate limiting for all API services"
+    tests_passed:
+      - 11 cost tracker tests
+      - 10 rate limiter tests
+      - All integration tests passing (231 total)
+    notes: |
+      Implemented CostTracker for API usage and cost monitoring:
+      - OpenAI embedding cost calculation ($0.00013 per 1K tokens)
+      - Drive API quota tracking (queries per 100 seconds)
+      - Qdrant operation counting
+      - Real-time cost breakdown and summaries
+
+      Implemented RateLimiter with token bucket algorithm:
+      - Sliding window rate limiting
+      - Pre-configured limiters for OpenAI (5000/min), Drive (900/100s), Qdrant (1000/min)
+      - Automatic delay calculation to prevent quota exhaustion
+      - Usage percentage monitoring
+
+      Integrated into SyncOrchestrator:
+      - Cost tracking for all API calls
+      - Token-based cost calculation for embeddings
+      - Console logging of cost summaries
+      - Real-time metrics during sync operations
+
+      Factory pattern for easy service-specific configuration:
+      - RateLimiterFactory.createOpenAILimiter()
+      - RateLimiterFactory.createDriveLimiter()
+      - RateLimiterFactory.createQdrantLimiter(customLimit)
+
+  - task_id: TASK-019
+    spec_id: null
+    title: "Add support for PDF files"
+    completed_at: "2025-11-14T01:20:00Z"
+    duration: "1 hour"
+    outcome: "PDF text extraction and processing in sync pipeline"
+    tests_passed:
+      - All existing tests passing (231 total)
+      - PDF support integrated into Drive client tests
+    notes: |
+      Added PDF text extraction capability:
+      - Installed pdfjs-dist library for PDF parsing
+      - Created pdf-extractor utility module
+      - extractTextFromPDF() function for text extraction from PDF buffers
+      - isPDFBuffer() helper for PDF validation
+
+      Extended DriveClient for PDF support:
+      - Modified listMarkdownFiles() to include .pdf files
+      - Updated scanFolder() to detect PDF files by extension and MIME type
+      - Enhanced downloadFileContent() to handle PDF binary downloads
+      - Automatic PDF text extraction when mimeType is 'application/pdf'
+      - Dynamic import of PDF extractor to avoid loading overhead
+
+      Updated file filtering in changes API:
+      - Support for both .md and .pdf file extensions
+      - MIME type checking for application/pdf
+      - Consistent handling across full sync and incremental sync
+
+      Configuration updates:
+      - Added .pdf to supported_extensions in .governance/env.yaml
+      - Updated sync orchestrator to pass mimeType to download function
+
+      Fully integrated into existing pipeline:
+      - PDF text is chunked, embedded, and stored like markdown
+      - Same incremental optimization (chunk hashing, selective re-embedding)
+      - Same error handling and retry logic
+      - All existing features work with PDF files
