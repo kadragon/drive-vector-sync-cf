@@ -23,6 +23,10 @@ vi.mock('openai', () => {
   };
 });
 
+// Constants
+const DEFAULT_EMBEDDING_DIMENSIONS = 3072;
+const CUSTOM_EMBEDDING_DIMENSIONS = 1536;
+
 describe('EmbeddingClient', () => {
   let client: EmbeddingClient;
 
@@ -46,7 +50,7 @@ describe('EmbeddingClient', () => {
       const customClient = new EmbeddingClient({
         apiKey: 'test-key',
         model: 'text-embedding-ada-002',
-        dimensions: 1536,
+        dimensions: CUSTOM_EMBEDDING_DIMENSIONS,
       });
 
       expect(customClient).toBeDefined();
@@ -62,7 +66,7 @@ describe('EmbeddingClient', () => {
     });
 
     it('should embed single text correctly', async () => {
-      const mockEmbedding = Array(3072).fill(0.1);
+      const mockEmbedding = Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.1);
       mockCreate.mockResolvedValue({
         data: [
           {
@@ -79,14 +83,14 @@ describe('EmbeddingClient', () => {
       expect(mockCreate).toHaveBeenCalledWith({
         model: 'text-embedding-3-large',
         input: ['Hello world'],
-        dimensions: 3072,
+        dimensions: DEFAULT_EMBEDDING_DIMENSIONS,
       });
     });
 
     it('should embed multiple texts in batch', async () => {
-      const mockEmbedding1 = Array(3072).fill(0.1);
-      const mockEmbedding2 = Array(3072).fill(0.2);
-      const mockEmbedding3 = Array(3072).fill(0.3);
+      const mockEmbedding1 = Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.1);
+      const mockEmbedding2 = Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.2);
+      const mockEmbedding3 = Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.3);
 
       mockCreate.mockResolvedValue({
         data: [
@@ -105,8 +109,8 @@ describe('EmbeddingClient', () => {
     });
 
     it('should preserve order using response indices', async () => {
-      const mockEmbedding1 = Array(3072).fill(0.1);
-      const mockEmbedding2 = Array(3072).fill(0.2);
+      const mockEmbedding1 = Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.1);
+      const mockEmbedding2 = Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.2);
 
       // Return embeddings in reverse order
       mockCreate.mockResolvedValue({
@@ -124,7 +128,7 @@ describe('EmbeddingClient', () => {
     });
 
     it('should validate embedding dimensions match config', async () => {
-      const wrongDimensionEmbedding = Array(1536).fill(0.1); // Wrong size
+      const wrongDimensionEmbedding = Array(CUSTOM_EMBEDDING_DIMENSIONS).fill(0.1); // Wrong size
 
       mockCreate.mockResolvedValue({
         data: [{ index: 0, embedding: wrongDimensionEmbedding }],
@@ -156,7 +160,7 @@ describe('EmbeddingClient', () => {
 
   describe('embedSingle', () => {
     it('should embed single text using embedBatch', async () => {
-      const mockEmbedding = Array(3072).fill(0.5);
+      const mockEmbedding = Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.5);
       mockCreate.mockResolvedValue({
         data: [{ index: 0, embedding: mockEmbedding }],
       });
@@ -167,7 +171,7 @@ describe('EmbeddingClient', () => {
       expect(mockCreate).toHaveBeenCalledWith({
         model: 'text-embedding-3-large',
         input: ['Single text'],
-        dimensions: 3072,
+        dimensions: DEFAULT_EMBEDDING_DIMENSIONS,
       });
     });
 
@@ -187,7 +191,11 @@ describe('EmbeddingClient', () => {
     });
 
     it('should process arrays smaller than batch size in single batch', async () => {
-      const mockEmbeddings = [Array(3072).fill(0.1), Array(3072).fill(0.2), Array(3072).fill(0.3)];
+      const mockEmbeddings = [
+        Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.1),
+        Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.2),
+        Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.3),
+      ];
 
       mockCreate.mockResolvedValue({
         data: mockEmbeddings.map((emb, idx) => ({ index: idx, embedding: emb })),
@@ -208,7 +216,7 @@ describe('EmbeddingClient', () => {
         return {
           data: input.map((_, idx) => ({
             index: idx,
-            embedding: Array(3072).fill(0.1),
+            embedding: Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.1),
           })),
         };
       });
@@ -228,7 +236,7 @@ describe('EmbeddingClient', () => {
         return {
           data: input.map((_, idx) => ({
             index: idx,
-            embedding: Array(3072).fill(0.1),
+            embedding: Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.1),
           })),
         };
       });
@@ -250,7 +258,7 @@ describe('EmbeddingClient', () => {
         return {
           data: input.map((_, idx) => ({
             index: idx,
-            embedding: Array(3072).fill(callCount * 0.1),
+            embedding: Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(callCount * 0.1),
           })),
         };
       });
@@ -274,7 +282,7 @@ describe('EmbeddingClient', () => {
       mockCreate.mockResolvedValue({
         data: texts.map((_, idx) => ({
           index: idx,
-          embedding: Array(3072).fill(0.1),
+          embedding: Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.1),
         })),
       });
 
@@ -302,7 +310,7 @@ describe('EmbeddingClient', () => {
               .fill(null)
               .map((_, idx) => ({
                 index: idx,
-                embedding: Array(3072).fill(0.1),
+                embedding: Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.1),
               })),
           };
         }
@@ -322,7 +330,7 @@ describe('EmbeddingClient', () => {
           throw new Error('Temporary failure');
         }
         return {
-          data: [{ index: 0, embedding: Array(3072).fill(0.1) }],
+          data: [{ index: 0, embedding: Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.1) }],
         };
       });
 
@@ -344,10 +352,10 @@ describe('EmbeddingClient', () => {
       const customClient = new EmbeddingClient({
         apiKey: 'test-key',
         model: 'text-embedding-ada-002',
-        dimensions: 1536,
+        dimensions: CUSTOM_EMBEDDING_DIMENSIONS,
       });
 
-      const mockEmbedding = Array(1536).fill(0.1);
+      const mockEmbedding = Array(CUSTOM_EMBEDDING_DIMENSIONS).fill(0.1);
       mockCreate.mockResolvedValue({
         data: [{ index: 0, embedding: mockEmbedding }],
       });
@@ -357,17 +365,17 @@ describe('EmbeddingClient', () => {
       expect(mockCreate).toHaveBeenCalledWith({
         model: 'text-embedding-ada-002',
         input: ['Test'],
-        dimensions: 1536,
+        dimensions: CUSTOM_EMBEDDING_DIMENSIONS,
       });
     });
 
     it('should validate custom dimensions', async () => {
       const customClient = new EmbeddingClient({
         apiKey: 'test-key',
-        dimensions: 1536,
+        dimensions: CUSTOM_EMBEDDING_DIMENSIONS,
       });
 
-      const wrongDimensionEmbedding = Array(3072).fill(0.1);
+      const wrongDimensionEmbedding = Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.1);
       mockCreate.mockResolvedValue({
         data: [{ index: 0, embedding: wrongDimensionEmbedding }],
       });
@@ -379,7 +387,7 @@ describe('EmbeddingClient', () => {
   describe('Edge Cases', () => {
     it('should handle very long texts', async () => {
       const longText = 'Lorem ipsum '.repeat(10000);
-      const mockEmbedding = Array(3072).fill(0.1);
+      const mockEmbedding = Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.1);
 
       mockCreate.mockResolvedValue({
         data: [{ index: 0, embedding: mockEmbedding }],
@@ -398,7 +406,7 @@ describe('EmbeddingClient', () => {
         'Special: @#$%^&*()',
       ];
 
-      const mockEmbeddings = specialTexts.map(() => Array(3072).fill(0.1));
+      const mockEmbeddings = specialTexts.map(() => Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.1));
       mockCreate.mockResolvedValue({
         data: mockEmbeddings.map((emb, idx) => ({ index: idx, embedding: emb })),
       });
@@ -409,7 +417,7 @@ describe('EmbeddingClient', () => {
     });
 
     it('should handle whitespace-only text', async () => {
-      const mockEmbedding = Array(3072).fill(0.1);
+      const mockEmbedding = Array(DEFAULT_EMBEDDING_DIMENSIONS).fill(0.1);
       mockCreate.mockResolvedValue({
         data: [{ index: 0, embedding: mockEmbedding }],
       });

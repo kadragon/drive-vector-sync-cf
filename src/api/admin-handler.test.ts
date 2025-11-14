@@ -8,8 +8,36 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AdminHandler, validateAdminToken } from './admin-handler';
-import { SyncResult } from '../sync/sync-orchestrator';
-import { SyncState } from '../state/kv-state-manager';
+import { SyncOrchestrator, SyncResult } from '../sync/sync-orchestrator';
+import { KVStateManager, SyncState } from '../state/kv-state-manager';
+import { QdrantClient } from '../qdrant/qdrant-client';
+
+// Define response types for better type safety
+interface AdminStatusResponse {
+  status: string;
+  lastSyncTime: string | null;
+  filesProcessed: number;
+  errorCount: number;
+  hasStartPageToken: boolean;
+}
+
+interface AdminStatsResponse {
+  collection: string;
+  vectorCount: number;
+  status: string;
+}
+
+interface AdminResyncResponse {
+  success: boolean;
+  message: string;
+  result: SyncResult;
+}
+
+interface AdminErrorResponse {
+  error: string;
+  message?: string;
+  path?: string;
+}
 
 // Mock implementations
 class MockSyncOrchestrator {
@@ -118,9 +146,9 @@ describe('AdminHandler', () => {
     qdrantClient = new MockQdrantClient();
 
     handler = new AdminHandler(
-      orchestrator as any,
-      stateManager as any,
-      qdrantClient as any,
+      orchestrator as unknown as SyncOrchestrator,
+      stateManager as unknown as KVStateManager,
+      qdrantClient as unknown as QdrantClient,
       rootFolderId
     );
   });
@@ -132,7 +160,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminResyncResponse;
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
@@ -145,7 +173,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminStatusResponse;
 
       expect(response.status).toBe(200);
       expect(data.status).toBe('ok');
@@ -157,7 +185,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminStatsResponse;
 
       expect(response.status).toBe(200);
       expect(data.collection).toBeDefined();
@@ -170,7 +198,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminErrorResponse;
 
       expect(response.status).toBe(404);
       expect(data.error).toBe('Not found');
@@ -209,7 +237,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminErrorResponse;
 
       expect(response.status).toBe(409);
       expect(data.error).toBe('Conflict');
@@ -250,7 +278,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminResyncResponse;
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
@@ -288,7 +316,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminStatusResponse;
 
       expect(response.status).toBe(200);
       expect(data.status).toBe('ok');
@@ -310,7 +338,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminStatusResponse;
 
       expect(data.hasStartPageToken).toBe(true);
     });
@@ -328,7 +356,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminStatusResponse;
 
       expect(data.hasStartPageToken).toBe(false);
     });
@@ -346,7 +374,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminStatusResponse;
 
       expect(data.filesProcessed).toBe(250);
       expect(data.errorCount).toBe(7);
@@ -366,7 +394,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminStatsResponse;
 
       expect(response.status).toBe(200);
       expect(data.collection).toBe('custom_collection');
@@ -384,7 +412,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminStatsResponse;
 
       expect(data.status).toBe('yellow');
     });
@@ -397,7 +425,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminStatsResponse;
 
       expect(data.vectorCount).toBe(0);
     });
@@ -413,7 +441,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminErrorResponse;
 
       expect(response.status).toBe(500);
       expect(data.error).toBe('Internal server error');
@@ -440,7 +468,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminErrorResponse;
 
       expect(response.status).toBe(500);
       expect(data.message).toContain('Qdrant error');
@@ -454,7 +482,7 @@ describe('AdminHandler', () => {
       });
 
       const response = await handler.handleRequest(request);
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminErrorResponse;
 
       expect(response.status).toBe(500);
       expect(data.error).toBe('Internal server error');
@@ -471,7 +499,7 @@ describe('AdminHandler', () => {
 
       expect(response.headers.get('Content-Type')).toBe('application/json');
 
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AdminStatusResponse;
       expect(data).toBeDefined();
     });
 
