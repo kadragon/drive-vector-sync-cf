@@ -38,6 +38,11 @@ export interface Env {
   MAX_CONCURRENCY: string;
   MAX_RETRIES: string;
   QDRANT_COLLECTION_NAME: string;
+
+  // Monitoring and alerting (optional)
+  WEBHOOK_URL?: string;
+  WEBHOOK_TYPE?: 'slack' | 'discord';
+  PERFORMANCE_THRESHOLD?: string;
 }
 
 /**
@@ -71,6 +76,11 @@ function initializeServices(env: Env) {
       chunkSize: parseInt(env.CHUNK_SIZE || '2000', 10),
       maxBatchSize: parseInt(env.MAX_BATCH_SIZE || '32', 10),
       maxConcurrency: parseInt(env.MAX_CONCURRENCY || '4', 10),
+    },
+    {
+      webhookUrl: env.WEBHOOK_URL,
+      webhookType: env.WEBHOOK_TYPE,
+      performanceThreshold: env.PERFORMANCE_THRESHOLD ? parseFloat(env.PERFORMANCE_THRESHOLD) : 0.5,
     }
   );
 
@@ -95,15 +105,8 @@ export default {
   /**
    * Scheduled cron trigger handler
    */
-  async scheduled(
-    event: ScheduledEvent,
-    env: Env,
-    _ctx: ExecutionContext
-  ): Promise<void> {
-    console.log(
-      'Scheduled sync triggered at:',
-      new Date(event.scheduledTime).toISOString()
-    );
+  async scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
+    console.log('Scheduled sync triggered at:', new Date(event.scheduledTime).toISOString());
 
     const { orchestrator, stateManager } = initializeServices(env);
 
@@ -118,9 +121,7 @@ export default {
 
       try {
         // 2. Run incremental sync
-        const result = await orchestrator.runIncrementalSync(
-          env.GOOGLE_ROOT_FOLDER_ID
-        );
+        const result = await orchestrator.runIncrementalSync(env.GOOGLE_ROOT_FOLDER_ID);
 
         console.log('Scheduled sync completed:', result);
       } finally {
@@ -136,11 +137,7 @@ export default {
   /**
    * HTTP request handler (admin API)
    */
-  async fetch(
-    request: Request,
-    env: Env,
-    _ctx: ExecutionContext
-  ): Promise<Response> {
+  async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     // Health check endpoint

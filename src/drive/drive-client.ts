@@ -85,7 +85,7 @@ export class DriveClient {
   }
 
   /**
-   * Recursively list all markdown files in a folder
+   * Recursively list all supported files in a folder (.md and .pdf)
    */
   async listMarkdownFiles(rootFolderId: string): Promise<DriveFileMetadata[]> {
     const files: DriveFileMetadata[] = [];
@@ -96,7 +96,7 @@ export class DriveClient {
       await this.scanFolder(rootFolderId, files, folderPathMap);
       return files;
     } catch (error) {
-      throw new DriveError('Failed to list markdown files', {
+      throw new DriveError('Failed to list supported files', {
         rootFolderId,
         error: (error as Error).message,
       });
@@ -136,12 +136,18 @@ export class DriveClient {
           folderPathMap.set(item.id, currentPath);
           // Recursively scan subfolder
           await this.scanFolder(item.id, files, folderPathMap);
-        } else if (item.name.endsWith('.md') || item.mimeType === 'text/markdown') {
-          // Add markdown file
+        } else if (
+          item.name.endsWith('.md') ||
+          item.mimeType === 'text/markdown' ||
+          item.name.endsWith('.pdf') ||
+          item.mimeType === 'application/pdf'
+        ) {
+          // Add supported file (markdown or PDF)
           files.push({
             id: item.id,
             name: item.name,
-            mimeType: item.mimeType || 'text/markdown',
+            mimeType:
+              item.mimeType || (item.name.endsWith('.pdf') ? 'application/pdf' : 'text/markdown'),
             modifiedTime: item.modifiedTime || new Date().toISOString(),
             path: currentPath,
             parents: item.parents || undefined,
@@ -191,8 +197,14 @@ export class DriveClient {
           const file = change.file;
           if (!file || !file.name) continue;
 
-          // Only process markdown files
-          if (!file.name.endsWith('.md') && file.mimeType !== 'text/markdown') {
+          // Only process supported files (markdown and PDF)
+          const isSupported =
+            file.name.endsWith('.md') ||
+            file.mimeType === 'text/markdown' ||
+            file.name.endsWith('.pdf') ||
+            file.mimeType === 'application/pdf';
+
+          if (!isSupported) {
             continue;
           }
 
@@ -249,8 +261,30 @@ export class DriveClient {
   /**
    * Download file content
    */
-  async downloadFileContent(fileId: string): Promise<string> {
+  async downloadFileContent(fileId: string, mimeType?: string): Promise<string> {
     try {
+      // Check if file is PDF
+      const isPDF = mimeType === 'application/pdf';
+
+      if (isPDF) {
+        // Download PDF as binary
+        const response = await withRetry(async () => {
+          return await this.drive.files.get(
+            {
+              fileId,
+              alt: 'media',
+            },
+            { responseType: 'arraybuffer' }
+          );
+        });
+
+        // Import PDF extractor dynamically to avoid issues in non-PDF contexts
+        const { extractTextFromPDF } = await import('../utils/pdf-extractor.js');
+        const text = await extractTextFromPDF(response.data as ArrayBuffer);
+        return text;
+      }
+
+      // Download text file (markdown, etc.)
       const response = await withRetry(async () => {
         return await this.drive.files.get(
           {
@@ -265,6 +299,7 @@ export class DriveClient {
     } catch (error) {
       throw new DriveError('Failed to download file content', {
         fileId,
+        mimeType,
         error: (error as Error).message,
       });
     }
