@@ -18,6 +18,7 @@ import { KVStateManager } from './state/kv-state-manager.js';
 import { SyncOrchestrator } from './sync/sync-orchestrator.js';
 import { AdminHandler, validateAdminToken } from './api/admin-handler.js';
 import { logError } from './errors/index.js';
+import type { VectorizeIndex } from './types/vectorize.js';
 
 export interface Env {
   // Cloudflare Workers bindings
@@ -51,41 +52,8 @@ export interface Env {
   PERFORMANCE_THRESHOLD?: string;
 }
 
-/**
- * Cloudflare Vectorize Index interface
- * (Type definition for Workers runtime binding)
- */
-export interface VectorizeIndex {
-  upsert(vectors: VectorizeVector[]): Promise<{ count: number }>;
-  deleteByIds(ids: string[]): Promise<{ count: number }>;
-  getByIds(ids: string[]): Promise<VectorizeMatch[]>;
-  query(vector: number[], options?: VectorizeQueryOptions): Promise<VectorizeQueryResult>;
-}
-
-export interface VectorizeVector {
-  id: string;
-  values: number[];
-  metadata?: Record<string, string | number | boolean>;
-}
-
-export interface VectorizeMatch {
-  id: string;
-  values?: number[];
-  metadata?: Record<string, unknown>;
-  score?: number;
-}
-
-export interface VectorizeQueryOptions {
-  topK?: number;
-  returnValues?: boolean;
-  returnMetadata?: boolean | 'indexed' | 'all';
-  filter?: Record<string, unknown>;
-}
-
-export interface VectorizeQueryResult {
-  matches: VectorizeMatch[];
-  count: number;
-}
+// Re-export Vectorize types for external use
+export type { VectorizeIndex };
 
 /**
  * Initialize all clients and orchestrator
@@ -109,7 +77,7 @@ function initializeServices(env: Env) {
   if (env.VECTORIZE && env.FILE_VECTOR_INDEX) {
     console.log('Using Cloudflare Vectorize for vector storage');
     vectorClient = new VectorizeClient({
-      index: env.VECTORIZE,
+      index: env.VECTORIZE as VectorizeIndex,
       fileIndex: env.FILE_VECTOR_INDEX,
       collectionName: env.QDRANT_COLLECTION_NAME, // Keep same name for compatibility
     });

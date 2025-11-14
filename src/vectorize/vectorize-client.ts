@@ -15,6 +15,7 @@
 import { withRetry } from '../errors/index.js';
 import { parseVectorId } from './vector-id.js';
 import { VectorStoreClient, VectorPoint } from '../types/vector-store.js';
+import type { VectorizeIndex, VectorizeMatch } from '../types/vectorize.js';
 
 /**
  * Vectorize client configuration
@@ -23,52 +24,6 @@ export interface VectorizeConfig {
   index: VectorizeIndex;
   fileIndex: KVNamespace;
   collectionName: string; // Kept for interface compatibility
-}
-
-/**
- * Cloudflare Vectorize index interface
- * (Provided by Workers runtime)
- */
-export interface VectorizeIndex {
-  upsert(vectors: VectorizeVector[]): Promise<VectorizeUpsertResult>;
-  deleteByIds(ids: string[]): Promise<VectorizeDeleteResult>;
-  getByIds(ids: string[]): Promise<VectorizeMatch[]>;
-  query(vector: number[], options?: VectorizeQueryOptions): Promise<VectorizeQueryResult>;
-}
-
-export interface VectorizeVector {
-  id: string;
-  values: number[];
-  metadata?: Record<string, string | number | boolean>;
-}
-
-export interface VectorizeMatch {
-  id: string;
-  values?: number[];
-  metadata?: Record<string, unknown>;
-  score?: number;
-}
-
-export interface VectorizeUpsertResult {
-  count: number;
-  ids?: string[];
-}
-
-export interface VectorizeDeleteResult {
-  count: number;
-  ids?: string[];
-}
-
-export interface VectorizeQueryOptions {
-  topK?: number;
-  returnValues?: boolean;
-  returnMetadata?: boolean | 'indexed' | 'all';
-  filter?: Record<string, unknown>;
-}
-
-export interface VectorizeQueryResult {
-  matches: VectorizeMatch[];
-  count: number;
 }
 
 /**
@@ -214,21 +169,22 @@ export class VectorizeClient implements VectorStoreClient {
         return await this.index.getByIds(ids);
       });
 
-      // 3. Transform to VectorPoint format
+      // 3. Transform to VectorPoint format with type-safe metadata access
       const vectors: VectorPoint[] = response.map((item: VectorizeMatch) => {
-        const metadata = item.metadata as Record<string, string | number>;
+        const metadata = item.metadata as Record<string, unknown> | undefined;
 
         return {
           id: item.id,
           vector: item.values || [],
           payload: {
-            file_id: (metadata.file_id as string) || '',
-            file_name: (metadata.file_name as string) || '',
-            file_path: (metadata.file_path as string) || '',
-            chunk_index: (metadata.chunk_index as number) || 0,
-            chunk_hash: (metadata.chunk_hash as string) || '',
-            last_modified: (metadata.last_modified as string) || '',
-            text: (metadata.text as string) || undefined,
+            file_id: typeof metadata?.file_id === 'string' ? metadata.file_id : '',
+            file_name: typeof metadata?.file_name === 'string' ? metadata.file_name : '',
+            file_path: typeof metadata?.file_path === 'string' ? metadata.file_path : '',
+            chunk_index: typeof metadata?.chunk_index === 'number' ? metadata.chunk_index : 0,
+            chunk_hash: typeof metadata?.chunk_hash === 'string' ? metadata.chunk_hash : '',
+            last_modified:
+              typeof metadata?.last_modified === 'string' ? metadata.last_modified : '',
+            text: typeof metadata?.text === 'string' ? metadata.text : undefined,
           },
         };
       });
