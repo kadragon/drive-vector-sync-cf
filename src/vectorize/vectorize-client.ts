@@ -160,7 +160,9 @@ export class VectorizeClient implements VectorStoreClient {
       throw new Error(`Failed to upsert vectors: ${(error as Error).message}`);
     }
 
-    // 3. Update FILE_VECTOR_INDEX for each file
+    // 3. Update FILE_VECTOR_INDEX and track newly added IDs
+    let totalNewVectors = 0;
+
     for (const [fileId, newIds] of vectorsByFile.entries()) {
       try {
         const key = `file:${fileId}`;
@@ -169,6 +171,10 @@ export class VectorizeClient implements VectorStoreClient {
         const existingJson = await this.fileIndex.get(key);
         const existingIds: string[] = existingJson ? JSON.parse(existingJson) : [];
         const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
+
+        // Calculate net-new vectors for this file
+        const addedCount = mergedIds.length - existingIds.length;
+        totalNewVectors += addedCount;
 
         await this.fileIndex.put(key, JSON.stringify(mergedIds), {
           expirationTtl: 86400 * 365, // 1 year
@@ -179,8 +185,8 @@ export class VectorizeClient implements VectorStoreClient {
       }
     }
 
-    // 4. Update vector count
-    await this.updateVectorCount(vectors.length);
+    // 4. Update vector count with only net-new vectors
+    await this.updateVectorCount(totalNewVectors);
   }
 
   /**

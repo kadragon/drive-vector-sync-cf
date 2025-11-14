@@ -391,12 +391,58 @@
   2. Add Wrangler binding + env docs updates, and remove `QDRANT_*` secrets once code migrates.
   3. Extend monitoring to capture mutation lag + rename cost/metric labels (`vectorIndexCalls`).
 
+### Session 6: 2025-11-15 07:30-07:40 - Vector Count Inflation Bug Fix (TASK-026) ✅
+
+**Issue Identified:**
+- Code review found VectorizeClient.upsertVectors() always incremented counter by full batch size
+- Re-upserting same IDs (common in incremental syncs) caused counter inflation
+- Example: 100 vectors re-synced 5 times → counter shows 500 instead of 100
+- Affected /admin/stats accuracy after any incremental sync
+
+**Root Cause:**
+- Line 183: `await this.updateVectorCount(vectors.length)` always added full batch
+- KV index correctly merged IDs with Set deduplication, but count logic ignored this
+- No distinction between net-new IDs vs. existing ID updates
+
+**Fix Applied (Option 2: KV Index-based Recalculation):**
+- Track actual newly-added IDs by comparing `mergedIds.length - existingIds.length` per file
+- Accumulate delta across all files in batch
+- Call `updateVectorCount(totalNewVectors)` once with net increment
+- **Code changes:** src/vectorize/vectorize-client.ts lines 163-189
+
+**Tests Added:**
+- Created `src/vectorize/vectorize-client.test.ts` with 5 comprehensive tests:
+  1. First upsert: full batch increment
+  2. Re-upsert same IDs: zero increment
+  3. Partial update: increment only new IDs
+  4. Multi-file mixed: correct net increment across files
+  5. Deletion tracking: correct decrement
+- Used in-memory KV mock for realistic test scenarios
+
+**Test Results:**
+- ✅ All 5 new tests passing
+- ✅ Full suite: 241 tests passing (236 existing + 5 new)
+- ✅ Type-check: 0 errors
+- ✅ ESLint: 0 errors
+- ✅ No regression in existing functionality
+
+**Technical Details:**
+- KV merge loop now tracks `addedCount = mergedIds.length - existingIds.length`
+- Accumulates total across all files before single updateVectorCount call
+- Maintains same deletion logic (negative delta on deleteVectorsByIds)
+- No additional API calls (efficient Option 2 approach vs Option 1)
+
+**Impact:**
+- Fixes P2 issue from code review
+- /admin/stats vectorCount now accurately reflects actual vector count
+- Prevents metric drift in production deployments
+
 ## Project Statistics
 
-- **Total Lines of Code:** ~3100+ LOC
-- **Test Coverage:** 236 unit tests passing
-- **Modules:** 8 core modules + monitoring + utilities
+- **Total Lines of Code:** ~3400+ LOC
+- **Test Coverage:** 241 unit tests passing
+- **Modules:** 8 core modules + vectorize client + monitoring + utilities
 - **Dependencies:** 5 production, 9 dev (all up-to-date, 0 vulnerabilities)
-- **Time Invested:** ~21 hours
+- **Time Invested:** ~22 hours
 - **Remaining Work:** ~9 hours (E2E tests, documentation, deployment)
 - **Cost Optimization:** 80-90% reduction in embedding API calls for updates

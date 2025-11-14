@@ -2,6 +2,20 @@
 # Tasks are moved here when completed
 
 completed_tasks:
+  - task_id: TASK-026
+    spec_id: SPEC-vectorize-migration-1
+    title: "Fix vector count inflation on repeated upserts"
+    completed_at: "2025-11-15T07:40:00Z"
+    duration: "0.17 hours"
+    outcome: "Fixed VectorizeClient to track only net-new vector IDs, preventing count inflation on re-upserts. Created comprehensive test suite with in-memory KV mock."
+    tests_passed:
+      - TEST-vectorize-count-1
+    notes: |
+      - Modified upsertVectors to calculate actual delta (mergedIds.length - existingIds.length) per file
+      - Accumulates total new vectors across all files before single updateVectorCount call
+      - Added 5 comprehensive tests covering all scenarios
+      - Full test suite: 241 tests passing (236 existing + 5 new)
+      - Fixes P2 code review issue affecting /admin/stats accuracy
   - task_id: TASK-025
     spec_id: SPEC-vectorize-migration-1
     title: "Vectorize migration analysis"
