@@ -10,21 +10,25 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QdrantClient, generateVectorId, parseVectorId } from './qdrant-client';
 import type { VectorPoint } from './qdrant-client';
 
-// Mock QdrantClient from SDK
+// Mock QdrantClient from SDK with proper class mocking for Vitest 4.x
 vi.mock('@qdrant/js-client-rest', () => {
   return {
-    QdrantClient: vi.fn().mockImplementation(() => ({
-      getCollections: vi.fn().mockResolvedValue({ collections: [] }),
-      createCollection: vi.fn().mockResolvedValue({}),
-      upsert: vi.fn().mockResolvedValue({}),
-      delete: vi.fn().mockResolvedValue({}),
-      scroll: vi.fn().mockResolvedValue({ points: [] }),
-      getCollection: vi.fn().mockResolvedValue({
+    QdrantClient: class MockQdrantClient {
+      getCollections = vi.fn().mockResolvedValue({ collections: [] });
+      createCollection = vi.fn().mockResolvedValue({});
+      upsert = vi.fn().mockResolvedValue({});
+      delete = vi.fn().mockResolvedValue({});
+      scroll = vi.fn().mockResolvedValue({ points: [] });
+      getCollection = vi.fn().mockResolvedValue({
         name: 'test_collection',
         points_count: 100,
         status: 'green',
-      }),
-    })),
+      });
+
+      constructor() {
+        // Mock constructor
+      }
+    },
   };
 });
 

@@ -329,3 +329,51 @@ completed_tasks:
       - Same incremental optimization (chunk hashing, selective re-embedding)
       - Same error handling and retry logic
       - All existing features work with PDF files
+
+  - task_id: TASK-024
+    spec_id: SPEC-drive-integration-1
+    title: "Migrate from OAuth2 to Service Account authentication"
+    completed_at: "2025-11-14T06:30:00Z"
+    duration: "1.5 hours"
+    outcome: "Complete migration to Service Account JWT authentication with package updates"
+    tests_passed:
+      - All 236 unit tests passing
+      - 5 new Service Account factory method tests
+    notes: |
+      Service Account Authentication Migration:
+      - Replaced OAuth2Client with JWT from google-auth-library
+      - Updated DriveClient interface to use clientEmail, privateKey, subject
+      - Added DriveClient.fromJSON() factory method for easy initialization
+      - Optional domain-wide delegation support via subject parameter
+      - Changed scope to read-only: drive.readonly
+      - Updated src/index.ts Env interface for Service Account
+
+      Configuration Updates:
+      - .spec/drive-integration/spec.yaml: Updated authentication method
+      - .governance/env.yaml: Updated secrets and authentication config
+      - .governance/memory.md: Updated security notes and Drive integration
+      - wrangler.toml: Updated secrets documentation
+
+      Package Updates (npm audit fix --force):
+      - googleapis: 144.0.0 → 166.0.0
+      - @types/node: 22.19.1 → 24.10.1
+      - wrangler: 3.114.15 → 4.48.0 (breaking changes)
+      - vitest: 2.1.9 → 4.0.8 (breaking changes)
+      - Security vulnerabilities: 6 → 0
+
+      Vitest 4.x Migration:
+      - Fixed mock constructors in drive-client.test.ts (JWT class mock)
+      - Fixed mock constructors in qdrant-client.test.ts (QdrantClient class mock)
+      - Changed vi.fn().mockImplementation(() => {}) to proper class mocking
+      - Updated error message assertions for fromJSON validation
+
+      Test Results:
+      - All 236 tests passing
+      - Type-check: 0 errors
+      - ESLint: 0 errors, 4 warnings (monitoring any types)
+      - npm audit: 0 vulnerabilities
+
+      Breaking Changes for Deployment:
+      - REMOVED secrets: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN
+      - ADDED secrets: GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_IMPERSONATION_EMAIL (optional)
+      - Service Account email must be shared with target Google Drive folder

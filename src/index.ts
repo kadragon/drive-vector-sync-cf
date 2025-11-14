@@ -23,9 +23,10 @@ export interface Env {
   SYNC_STATE: KVNamespace;
 
   // Secrets
-  GOOGLE_CLIENT_ID: string;
-  GOOGLE_CLIENT_SECRET: string;
-  GOOGLE_REFRESH_TOKEN: string;
+  // Service Account JSON string from Google Cloud Console
+  GOOGLE_SERVICE_ACCOUNT_JSON: string;
+  // Optional: User email for domain-wide delegation
+  GOOGLE_IMPERSONATION_EMAIL?: string;
   GOOGLE_ROOT_FOLDER_ID: string;
   OPENAI_API_KEY: string;
   QDRANT_URL: string;
@@ -49,11 +50,11 @@ export interface Env {
  * Initialize all clients and orchestrator
  */
 function initializeServices(env: Env) {
-  const driveClient = new DriveClient({
-    clientId: env.GOOGLE_CLIENT_ID,
-    clientSecret: env.GOOGLE_CLIENT_SECRET,
-    refreshToken: env.GOOGLE_REFRESH_TOKEN,
-  });
+  // Initialize Drive client with Service Account
+  const driveClient = DriveClient.fromJSON(
+    env.GOOGLE_SERVICE_ACCOUNT_JSON,
+    env.GOOGLE_IMPERSONATION_EMAIL
+  );
 
   const embeddingClient = new EmbeddingClient({
     apiKey: env.OPENAI_API_KEY,

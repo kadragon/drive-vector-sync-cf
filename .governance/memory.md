@@ -32,7 +32,9 @@
 
 ## Security Notes
 - All credentials in Cloudflare Secrets
-- OAuth2 tokens for Google Drive (refresh token flow)
+- Service Account authentication for Google Drive (JWT-based, no token refresh needed)
+- Read-only scope for Google Drive: `drive.readonly`
+- Optional domain-wide delegation support for impersonation
 - Qdrant API keys in Secrets
 - Admin API protected with Bearer token authentication
 - KV for state persistence only
@@ -59,11 +61,14 @@
 - **Tests:** 21 passing
 
 ### Drive Integration (`src/drive/`)
-- OAuth2Client with refresh token flow
+- Service Account authentication with JWT (google-auth-library)
+- Factory method `fromJSON()` for easy initialization from service account JSON
+- Optional domain-wide delegation via `subject` parameter
 - Recursive folder scanning with pagination
 - Changes API for incremental sync
-- File content download
-- **Tests:** Unit tests completed (mocked in other modules)
+- File content download (supports .md and .pdf files)
+- PDF text extraction using pdfjs-dist
+- **Tests:** 17 passing (12 original + 5 new Service Account tests)
 
 ### Embedding Pipeline (`src/embedding/`)
 - tiktoken-based token counting (cl100k_base)
@@ -302,9 +307,11 @@
 ⚠️ **Before production deployment, user must configure:**
 
 1. **Google Cloud Platform**
-   - Create OAuth2 credentials
+   - Create Service Account in Google Cloud Console
    - Enable Google Drive API
-   - Generate refresh token
+   - Download Service Account JSON credentials
+   - (Optional) Enable domain-wide delegation for user impersonation
+   - Share target Google Drive folder with service account email
 
 2. **Qdrant Cloud**
    - Create account and cluster
@@ -317,12 +324,67 @@
    - Create KV namespace
    - Configure secrets via `wrangler secret put`
 
+### Session 4: 2025-11-14 14:00-15:30 - Service Account Migration & Package Updates ✅
+
+**Completed Tasks:**
+- TASK-024: Migrated from OAuth2 to Service Account authentication
+- Package updates: googleapis@166.0.0, @types/node@24.10.1, wrangler@4.48.0, vitest@4.0.8
+- Security fixes: Resolved all 6 moderate severity vulnerabilities
+
+**Key Changes:**
+
+1. **Service Account Authentication Migration**
+   - Updated `DriveClient` to use JWT-based Service Account authentication
+   - Replaced OAuth2Client with JWT from google-auth-library
+   - Added factory method `DriveClient.fromJSON()` for easy initialization
+   - Added optional domain-wide delegation support via `subject` parameter
+   - Updated all related tests (5 new Service Account tests)
+   - Scope changed to read-only: `drive.readonly`
+
+2. **Environment Configuration Updates**
+   - `src/index.ts`: Changed Env interface for Service Account
+   - `.spec/drive-integration/spec.yaml`: Updated authentication spec
+   - `.governance/env.yaml`: Updated secrets configuration
+   - `.governance/memory.md`: Updated security notes and Drive integration docs
+   - `wrangler.toml`: Updated secrets documentation
+
+3. **Package Updates**
+   - googleapis: 144.0.0 → 166.0.0 (safe update)
+   - @types/node: 22.19.1 → 24.10.1 (safe update)
+   - wrangler: 3.114.15 → 4.48.0 (breaking changes handled)
+   - vitest: 2.1.9 → 4.0.8 (breaking changes handled)
+   - Security vulnerabilities: 6 → 0
+
+4. **Vitest 4.x Migration**
+   - Fixed mock constructor issues in drive-client.test.ts
+   - Fixed mock constructor issues in qdrant-client.test.ts
+   - Changed `vi.fn().mockImplementation()` to proper class mocking
+   - Updated error message assertions in fromJSON tests
+
+**Test Results:**
+- ✅ All 236 tests passing
+- ✅ Type-check: 0 errors
+- ✅ ESLint: 0 errors, 4 warnings (monitoring `any` types)
+- ✅ npm audit: 0 vulnerabilities
+
+**Technical Improvements:**
+- More secure: Service Account eliminates refresh token management
+- Simpler deployment: Single JSON credential file
+- Better for serverless: No token refresh logic needed
+- Domain-wide delegation support for enterprise use cases
+
+**Breaking Changes for Deployment:**
+- Secret names changed:
+  - REMOVED: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN
+  - ADDED: GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_IMPERSONATION_EMAIL (optional)
+- Service Account JSON must be shared with target Google Drive folder
+
 ## Project Statistics
 
-- **Total Lines of Code:** ~3100+ LOC (added ~300 LOC for optimization)
-- **Test Coverage:** 85 unit tests (19 new/updated tests)
-- **Modules:** 8 core modules + 1 hash utility
-- **Dependencies:** 8 production, 11 dev
-- **Time Invested:** ~18 hours
-- **Remaining Work:** ~9 hours
+- **Total Lines of Code:** ~3100+ LOC
+- **Test Coverage:** 236 unit tests passing
+- **Modules:** 8 core modules + monitoring + utilities
+- **Dependencies:** 5 production, 9 dev (all up-to-date, 0 vulnerabilities)
+- **Time Invested:** ~21 hours
+- **Remaining Work:** ~9 hours (E2E tests, documentation, deployment)
 - **Cost Optimization:** 80-90% reduction in embedding API calls for updates

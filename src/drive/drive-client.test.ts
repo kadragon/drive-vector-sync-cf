@@ -1,18 +1,21 @@
 /**
  * Tests for DriveClient path building and recursive filtering
+ * Updated for Service Account authentication
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DriveClient } from './drive-client.js';
 import { google } from 'googleapis';
 
-// Mock googleapis
+// Mock googleapis with proper class mocking for Vitest 4.x
 vi.mock('googleapis', () => ({
   google: {
     auth: {
-      OAuth2: vi.fn().mockImplementation(() => ({
-        setCredentials: vi.fn(),
-      })),
+      JWT: class MockJWT {
+        constructor() {
+          // Mock JWT constructor
+        }
+      },
     },
     drive: vi.fn(),
   },
@@ -21,6 +24,11 @@ vi.mock('googleapis', () => ({
 describe('DriveClient - Path Building and Filtering', () => {
   let driveClient: DriveClient;
   let mockDrive: any;
+
+  const mockServiceAccountCredentials = {
+    clientEmail: 'test@test-project.iam.gserviceaccount.com',
+    privateKey: '-----BEGIN PRIVATE KEY-----\nMOCK_KEY\n-----END PRIVATE KEY-----\n',
+  };
 
   beforeEach(() => {
     mockDrive = {
@@ -36,11 +44,7 @@ describe('DriveClient - Path Building and Filtering', () => {
 
     vi.mocked(google.drive).mockReturnValue(mockDrive as any);
 
-    driveClient = new DriveClient({
-      clientId: 'test-client-id',
-      clientSecret: 'test-client-secret',
-      refreshToken: 'test-refresh-token',
-    });
+    driveClient = new DriveClient(mockServiceAccountCredentials);
   });
 
   describe('buildFilePath', () => {
@@ -531,6 +535,136 @@ describe('DriveClient - Path Building and Filtering', () => {
       // First request: isFileInFolder (folder-1)
       // Second request after cache clear: isFileInFolder (folder-1) again
       expect(mockDrive.files.get).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('fromJSON - Service Account Factory Method', () => {
+    it('should create DriveClient from valid service account JSON', () => {
+      const serviceAccountJSON = JSON.stringify({
+        type: 'service_account',
+        project_id: 'test-project',
+        private_key_id: 'key-id',
+        private_key: '-----BEGIN PRIVATE KEY-----\nMOCK_KEY\n-----END PRIVATE KEY-----\n',
+        client_email: 'test@test-project.iam.gserviceaccount.com',
+        client_id: '123456',
+        auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+        token_uri: 'https://oauth2.googleapis.com/token',
+      });
+
+      const client = DriveClient.fromJSON(serviceAccountJSON);
+      expect(client).toBeInstanceOf(DriveClient);
+    });
+
+    it('should create DriveClient with subject for domain-wide delegation', () => {
+      const serviceAccountJSON = JSON.stringify({
+        client_email: 'test@test-project.iam.gserviceaccount.com',
+        private_key: '-----BEGIN PRIVATE KEY-----\nMOCK_KEY\n-----END PRIVATE KEY-----\n',
+      });
+
+      const client = DriveClient.fromJSON(serviceAccountJSON, 'user@example.com');
+      expect(client).toBeInstanceOf(DriveClient);
+    });
+
+    it('should throw error for invalid JSON', () => {
+      expect(() => {
+        DriveClient.fromJSON('invalid json');
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error for missing client_email', () => {
+      const invalidJSON = JSON.stringify({
+        private_key: '-----BEGIN PRIVATE KEY-----\nMOCK_KEY\n-----END PRIVATE KEY-----\n',
+      });
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error for missing private_key', () => {
+      const invalidJSON = JSON.stringify({
+        client_email: 'test@test-project.iam.gserviceaccount.com',
+      });
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error for null JSON', () => {
+      const invalidJSON = JSON.stringify(null);
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error for array JSON', () => {
+      const invalidJSON = JSON.stringify(['client_email', 'private_key']);
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error for primitive string JSON', () => {
+      const invalidJSON = JSON.stringify('not an object');
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error for primitive number JSON', () => {
+      const invalidJSON = JSON.stringify(123);
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error when client_email is not a string', () => {
+      const invalidJSON = JSON.stringify({
+        client_email: 123,
+        private_key: '-----BEGIN PRIVATE KEY-----\nMOCK_KEY\n-----END PRIVATE KEY-----\n',
+      });
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error when client_email is empty string', () => {
+      const invalidJSON = JSON.stringify({
+        client_email: '',
+        private_key: '-----BEGIN PRIVATE KEY-----\nMOCK_KEY\n-----END PRIVATE KEY-----\n',
+      });
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error when private_key is not a string', () => {
+      const invalidJSON = JSON.stringify({
+        client_email: 'test@test-project.iam.gserviceaccount.com',
+        private_key: { key: 'value' },
+      });
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error when private_key is empty string', () => {
+      const invalidJSON = JSON.stringify({
+        client_email: 'test@test-project.iam.gserviceaccount.com',
+        private_key: '',
+      });
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
     });
   });
 });

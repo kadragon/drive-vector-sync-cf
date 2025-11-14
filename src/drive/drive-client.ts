@@ -1,20 +1,37 @@
 /**
- * Google Drive API client with OAuth2 authentication
+ * Google Drive API client with Service Account authentication
  *
  * Trace:
  *   spec_id: SPEC-drive-integration-1
- *   task_id: TASK-001, TASK-002, TASK-003
+ *   task_id: TASK-001, TASK-002, TASK-003, TASK-024
  */
 
 import { google, drive_v3 } from 'googleapis';
-import { OAuth2Client } from 'google-auth-library';
+import { JWT } from 'google-auth-library';
 import { DriveError } from '../errors/index.js';
 import { withRetry } from '../errors/index.js';
 
+/**
+ * Service Account credentials for Google Drive API
+ * Can be provided as either a JSON string or parsed object
+ */
 export interface DriveCredentials {
-  clientId: string;
-  clientSecret: string;
-  refreshToken: string;
+  /**
+   * Service account email (e.g., "xxx@xxx.iam.gserviceaccount.com")
+   */
+  clientEmail: string;
+
+  /**
+   * Private key from service account JSON
+   * Must include the full key with -----BEGIN PRIVATE KEY----- header
+   */
+  privateKey: string;
+
+  /**
+   * Optional: Email of user to impersonate (for domain-wide delegation)
+   * If not provided, uses service account's own credentials
+   */
+  subject?: string;
 }
 
 export interface DriveFileMetadata {
@@ -33,26 +50,64 @@ export interface DriveChange {
 }
 
 /**
- * Google Drive client with OAuth2 authentication
+ * Google Drive client with Service Account authentication
  */
 export class DriveClient {
   private static readonly MAX_RECURSION_DEPTH = 10;
+  private static readonly DRIVE_SCOPES = ['https://www.googleapis.com/auth/drive.readonly'];
 
   private drive: drive_v3.Drive;
-  private auth: OAuth2Client;
+  private auth: JWT;
   private folderCache: Map<string, { name: string; parents?: string[] }>;
   private pathCache: Map<string, string>;
 
   constructor(credentials: DriveCredentials) {
-    this.auth = new google.auth.OAuth2(credentials.clientId, credentials.clientSecret);
-
-    this.auth.setCredentials({
-      refresh_token: credentials.refreshToken,
+    // Create JWT client for Service Account authentication
+    this.auth = new google.auth.JWT({
+      email: credentials.clientEmail,
+      key: credentials.privateKey,
+      scopes: DriveClient.DRIVE_SCOPES,
+      subject: credentials.subject, // For domain-wide delegation
     });
 
     this.drive = google.drive({ version: 'v3', auth: this.auth });
     this.folderCache = new Map();
     this.pathCache = new Map();
+  }
+
+  /**
+   * Helper method to create DriveClient from JSON string
+   * Useful for reading service account JSON from Cloudflare Secrets
+   */
+  static fromJSON(json: string, subject?: string): DriveClient {
+    try {
+      const parsed = JSON.parse(json);
+
+      // Validate that parsed result is an object
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Invalid service account JSON: must be a valid JSON object');
+      }
+
+      // Validate client_email
+      if (typeof parsed.client_email !== 'string' || !parsed.client_email) {
+        throw new Error('Invalid service account JSON: client_email must be a non-empty string');
+      }
+
+      // Validate private_key
+      if (typeof parsed.private_key !== 'string' || !parsed.private_key) {
+        throw new Error('Invalid service account JSON: private_key must be a non-empty string');
+      }
+
+      return new DriveClient({
+        clientEmail: parsed.client_email,
+        privateKey: parsed.private_key,
+        subject,
+      });
+    } catch (error) {
+      throw new DriveError('Failed to parse service account JSON', {
+        error: (error as Error).message,
+      });
+    }
   }
 
   /**
