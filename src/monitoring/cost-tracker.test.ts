@@ -136,7 +136,7 @@ describe('CostTracker', () => {
       expect(breakdown.openai.cost).toBeCloseTo(0.00065, 6);
       expect(breakdown.drive.queries).toBe(1);
       expect(breakdown.qdrant.operations).toBe(1);
-      expect(breakdown.total.cost).toBeCloseTo(0.00065, 6);
+      expect(breakdown.total.openaiCost).toBeCloseTo(0.00065, 6);
     });
   });
 });

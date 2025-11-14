@@ -12,6 +12,7 @@ export interface AlertConfig {
   webhookType?: 'slack' | 'discord';
   errorThreshold?: number;
   performanceThreshold?: number;
+  minFilesForPerformanceAlert?: number;
 }
 
 /**
@@ -66,7 +67,9 @@ export class AlertingService {
 
     // Check if performance is below threshold
     const threshold = this.config.performanceThreshold || 0.5; // files per second
-    if (perfMetrics.filesPerSecond < threshold && metrics.filesProcessed > 10) {
+    const minFiles = this.config.minFilesForPerformanceAlert || 10;
+
+    if (perfMetrics.filesPerSecond < threshold && metrics.filesProcessed > minFiles) {
       const message = this.formatPerformanceMessage(perfMetrics);
       await this.sendWebhook(message);
     }
@@ -374,7 +377,10 @@ export class AlertingService {
       });
 
       if (!response.ok) {
-        console.error(`Failed to send webhook: ${response.status} ${response.statusText}`);
+        const responseBody = await response.text().catch(() => 'Unable to read response body');
+        console.error(`Failed to send webhook: ${response.status} ${response.statusText}`, {
+          responseBody,
+        });
       }
     } catch (error) {
       console.error('Error sending webhook:', error);
@@ -385,9 +391,35 @@ export class AlertingService {
 /**
  * Webhook message types
  */
+
+// Slack block types
+interface SlackBlock {
+  type: string;
+  text?: {
+    type: string;
+    text: string;
+  };
+  fields?: Array<{
+    type: string;
+    text: string;
+  }>;
+}
+
+// Discord embed types
+interface DiscordEmbed {
+  title?: string;
+  color?: number;
+  fields?: Array<{
+    name: string;
+    value: string;
+    inline?: boolean;
+  }>;
+  timestamp?: string;
+}
+
 interface WebhookMessage {
   content?: string;
   text?: string;
-  blocks?: any[];
-  embeds?: any[];
+  blocks?: SlackBlock[];
+  embeds?: DiscordEmbed[];
 }

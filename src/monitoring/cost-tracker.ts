@@ -156,7 +156,7 @@ export class CostTracker {
     openai: { tokens: number; cost: number; calls: number };
     drive: { queries: number; queriesLast100Sec: number };
     qdrant: { operations: number };
-    total: { cost: number };
+    total: { openaiCost: number };
   } {
     return {
       openai: {
@@ -172,7 +172,8 @@ export class CostTracker {
         operations: this.metrics.qdrant.totalOperations,
       },
       total: {
-        cost: this.metrics.openai.totalCost,
+        // Note: Currently only tracks OpenAI costs (Drive and Qdrant are usage-based)
+        openaiCost: this.metrics.openai.totalCost,
       },
     };
   }

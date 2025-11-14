@@ -6,6 +6,14 @@
  */
 
 import * as pdfjsLib from 'pdfjs-dist';
+import type { TextItem } from 'pdfjs-dist/types/src/display/api';
+
+/**
+ * Type guard to check if an item is a TextItem (not MarkedContent)
+ */
+function isTextItem(item: unknown): item is TextItem {
+  return typeof item === 'object' && item !== null && 'str' in item;
+}
 
 /**
  * Extract text content from PDF buffer
@@ -25,12 +33,8 @@ export async function extractTextFromPDF(pdfBuffer: ArrayBuffer): Promise<string
 
       // Combine text items into a single string
       const pageText = textContent.items
-        .map((item: any) => {
-          if ('str' in item) {
-            return item.str;
-          }
-          return '';
-        })
+        .filter(isTextItem)
+        .map(item => item.str)
         .join(' ');
 
       textPages.push(pageText);

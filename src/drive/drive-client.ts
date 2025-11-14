@@ -104,6 +104,18 @@ export class DriveClient {
   }
 
   /**
+   * Check if a file is a supported type (.md or .pdf)
+   */
+  private isSupportedFile(fileName: string, mimeType?: string | null): boolean {
+    return (
+      fileName.endsWith('.md') ||
+      mimeType === 'text/markdown' ||
+      fileName.endsWith('.pdf') ||
+      mimeType === 'application/pdf'
+    );
+  }
+
+  /**
    * Recursively scan folder for markdown files
    */
   private async scanFolder(
@@ -136,12 +148,7 @@ export class DriveClient {
           folderPathMap.set(item.id, currentPath);
           // Recursively scan subfolder
           await this.scanFolder(item.id, files, folderPathMap);
-        } else if (
-          item.name.endsWith('.md') ||
-          item.mimeType === 'text/markdown' ||
-          item.name.endsWith('.pdf') ||
-          item.mimeType === 'application/pdf'
-        ) {
+        } else if (this.isSupportedFile(item.name, item.mimeType)) {
           // Add supported file (markdown or PDF)
           files.push({
             id: item.id,
@@ -198,13 +205,7 @@ export class DriveClient {
           if (!file || !file.name) continue;
 
           // Only process supported files (markdown and PDF)
-          const isSupported =
-            file.name.endsWith('.md') ||
-            file.mimeType === 'text/markdown' ||
-            file.name.endsWith('.pdf') ||
-            file.mimeType === 'application/pdf';
-
-          if (!isSupported) {
+          if (!this.isSupportedFile(file.name, file.mimeType)) {
             continue;
           }
 
