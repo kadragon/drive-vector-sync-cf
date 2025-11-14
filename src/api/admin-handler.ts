@@ -8,7 +8,7 @@
 
 import { SyncOrchestrator } from '../sync/sync-orchestrator.js';
 import { KVStateManager } from '../state/kv-state-manager.js';
-import { QdrantClient } from '../qdrant/qdrant-client.js';
+import { VectorStoreClient } from '../types/vector-store.js';
 
 /**
  * Admin API request handler
@@ -17,7 +17,7 @@ export class AdminHandler {
   constructor(
     private orchestrator: SyncOrchestrator,
     private stateManager: KVStateManager,
-    private qdrantClient: QdrantClient,
+    private vectorClient: VectorStoreClient,
     private rootFolderId: string
   ) {}
 
@@ -110,11 +110,11 @@ export class AdminHandler {
    * Handle GET /admin/stats
    */
   private async handleStats(): Promise<Response> {
-    const collectionInfo = (await this.qdrantClient.getCollectionInfo()) as {
+    const collectionInfo = (await this.vectorClient.getCollectionInfo()) as {
       name?: string;
       status?: string;
     };
-    const vectorCount = await this.qdrantClient.countVectors();
+    const vectorCount = await this.vectorClient.countVectors();
 
     return this.jsonResponse({
       collection: collectionInfo.name,

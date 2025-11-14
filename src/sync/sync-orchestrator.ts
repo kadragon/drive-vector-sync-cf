@@ -11,7 +11,8 @@ import { DriveClient, DriveFileMetadata } from '../drive/drive-client.js';
 import { EmbeddingClient } from '../embedding/embedding-client.js';
 import { chunkText } from '../embedding/chunking.js';
 import { computeChunkHash } from '../embedding/hash.js';
-import { QdrantClient, VectorPoint, generateVectorId } from '../qdrant/qdrant-client.js';
+import { VectorStoreClient, VectorPoint } from '../types/vector-store.js';
+import { generateVectorId } from '../vectorize/vector-id.js';
 import { KVStateManager } from '../state/kv-state-manager.js';
 import { ErrorCollector, logError, toError } from '../errors/index.js';
 import { MetricsCollector } from '../monitoring/metrics.js';
@@ -43,7 +44,7 @@ export class SyncOrchestrator {
   constructor(
     private driveClient: DriveClient,
     private embeddingClient: EmbeddingClient,
-    private qdrantClient: QdrantClient,
+    private vectorClient: VectorStoreClient,
     private stateManager: KVStateManager,
     private config: SyncConfig,
     alertConfig?: AlertConfig
@@ -69,10 +70,10 @@ export class SyncOrchestrator {
     this.costTracker.reset();
 
     try {
-      // 1. Initialize Qdrant collection
+      // 1. Initialize vector store collection
       this.metricsCollector.recordQdrantApiCall();
       this.costTracker.recordQdrantOperation();
-      await this.qdrantClient.initializeCollection();
+      await this.vectorClient.initializeCollection();
 
       // 2. List all markdown files
       this.metricsCollector.recordDriveApiCall();
@@ -214,7 +215,7 @@ export class SyncOrchestrator {
           if (change.type === 'deleted') {
             this.metricsCollector.recordQdrantApiCall();
             this.costTracker.recordQdrantOperation();
-            await this.qdrantClient.deleteVectorsByFileId(change.fileId);
+            await this.vectorClient.deleteVectorsByFileId(change.fileId);
             this.metricsCollector.recordFileProcessed('deleted');
             this.metricsCollector.recordVectorsDeleted(1);
             vectorsDeleted++;
@@ -318,7 +319,7 @@ export class SyncOrchestrator {
     try {
       this.metricsCollector.recordQdrantApiCall();
       this.costTracker.recordQdrantOperation();
-      existingVectors = await this.qdrantClient.getVectorsByFileId(file.id);
+      existingVectors = await this.vectorClient.getVectorsByFileId(file.id);
       console.log(`Found ${existingVectors.length} existing vectors for file`);
     } catch (error) {
       const err = error as Error;
@@ -423,14 +424,14 @@ export class SyncOrchestrator {
       const idsToDelete = vectorsToDelete.map(v => v.id);
       this.metricsCollector.recordQdrantApiCall();
       this.costTracker.recordQdrantOperation();
-      await this.qdrantClient.deleteVectorsByIds(idsToDelete);
+      await this.vectorClient.deleteVectorsByIds(idsToDelete);
     }
 
     // 9. Upsert all vectors (both reused and newly embedded)
     if (vectorsToUpsert.length > 0) {
       this.metricsCollector.recordQdrantApiCall();
       this.costTracker.recordQdrantOperation();
-      await this.qdrantClient.upsertVectors(vectorsToUpsert);
+      await this.vectorClient.upsertVectors(vectorsToUpsert);
       console.log(`Upserted ${vectorsToUpsert.length} vectors for file: ${file.name}`);
     }
 

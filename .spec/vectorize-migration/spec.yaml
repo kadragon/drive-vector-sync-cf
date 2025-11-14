@@ -1,0 +1,34 @@
+spec_id: SPEC-vectorize-migration-1
+title: "Qdrant → Cloudflare Vectorize Migration Strategy"
+description: "Document existing Qdrant usage patterns and map them to Cloudflare Vectorize equivalents with migration guidance."
+
+given_when_then:
+  - given: "Repository currently integrates with Qdrant for vector storage"
+    when: "A migration plan is needed"
+    then: "All Qdrant touch points must be cataloged with purpose and metadata expectations"
+
+  - given: "Cloudflare Vectorize will replace Qdrant"
+    when: "We review each Qdrant operation"
+    then: "An equivalent Vectorize API call or workaround must be identified"
+
+  - given: "Differences exist between Qdrant and Vectorize capabilities"
+    when: "Gaps are detected"
+    then: "Document mitigation strategy, backlog work, or open questions"
+
+acceptance_tests:
+  - id: TEST-vectorize-migration-1
+    desc: "Report lists every QdrantClient method and collection lifecycle action used in the codebase"
+
+  - id: TEST-vectorize-migration-2
+    desc: "Report includes vector schema + payload metadata definitions with references to source files"
+
+  - id: TEST-vectorize-migration-3
+    desc: "Report maps each Qdrant operation to a Cloudflare Vectorize equivalent (or workaround) with migration notes"
+
+dependencies:
+  governance:
+    - "memory.md: Qdrant architecture context"
+    - "patterns.md: Qdrant Batch Upsert Pattern"
+
+linked_tasks:
+  - TASK-025

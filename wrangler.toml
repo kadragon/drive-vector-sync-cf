@@ -9,6 +9,17 @@ binding = "SYNC_STATE"
 id = "PLACEHOLDER_KV_ID"
 preview_id = "PLACEHOLDER_PREVIEW_KV_ID"
 
+# KV Namespace for file-to-vector ID mapping (Vectorize migration)
+[[kv_namespaces]]
+binding = "FILE_VECTOR_INDEX"
+id = "PLACEHOLDER_FILE_INDEX_ID"
+preview_id = "PLACEHOLDER_FILE_INDEX_PREVIEW_ID"
+
+# Cloudflare Vectorize binding (replaces Qdrant)
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "worknote-store"
+
 # Cron trigger - Daily at 17:00 UTC (01:00 KST next day)
 [triggers]
 crons = ["0 17 * * *"]
@@ -18,8 +29,6 @@ crons = ["0 17 * * *"]
 # - GOOGLE_SERVICE_ACCOUNT_JSON (Service Account JSON from Google Cloud Console)
 # - GOOGLE_ROOT_FOLDER_ID
 # - OPENAI_API_KEY
-# - QDRANT_URL
-# - QDRANT_API_KEY
 # - ADMIN_TOKEN
 #
 # Optional:
@@ -27,6 +36,10 @@ crons = ["0 17 * * *"]
 # - WEBHOOK_URL (for Slack/Discord alerts)
 # - WEBHOOK_TYPE (slack or discord)
 # - PERFORMANCE_THRESHOLD (files/sec, default: 0.5)
+#
+# Deprecated (will be removed after Vectorize migration):
+# - QDRANT_URL
+# - QDRANT_API_KEY
 
 # Node.js compatibility for googleapis and other packages
 node_compat = true
