@@ -27,7 +27,7 @@
   "license": "MIT",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241127.0",
-    "@types/node": "^22.10.1",
+    "@types/node": "24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.17.0",
     "@typescript-eslint/parser": "^8.17.0",
     "eslint": "^9.15.0",
@@ -35,12 +35,12 @@
     "lint-staged": "^16.2.6",
     "prettier": "^3.3.3",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.5",
-    "wrangler": "^3.87.0"
+    "vitest": "^4.0.8",
+    "wrangler": "^4.48.0"
   },
   "dependencies": {
     "@qdrant/js-client-rest": "^1.12.0",
-    "googleapis": "^144.0.0",
+    "googleapis": "166.0.0",
     "openai": "^4.76.1",
     "pdfjs-dist": "^4.10.38",
     "tiktoken": "^1.0.18"
