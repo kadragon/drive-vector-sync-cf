@@ -4,15 +4,18 @@
 current_task: null
 
 # Latest completed tasks:
-# - TASK-016: Drive path building (Already implemented)
-# - TASK-017: File filtering in changes API (Already implemented)
-# - TASK-020: Chunking with overlap
-# Completed at: 2025-11-13T13:39:00Z
+# - TASK-018: Add monitoring and alerting
+# - TASK-023: Add rate limiting and cost tracking
+# - TASK-019: Add support for PDF files
+# Completed at: 2025-11-14T01:20:00Z
 #
 # Core implementation status: COMPLETED ✓
 # - All major modules implemented
-# - 24 chunking tests passing (added 7 new overlap tests)
-# - 12 Drive client tests passing (path building and filtering)
+# - 231 tests passing (18 metrics, 11 cost tracker, 10 rate limiter tests added)
+# - Monitoring and alerting system with Slack/Discord webhooks
+# - Cost tracking for OpenAI, Drive, and Qdrant API usage
+# - Rate limiting with token bucket algorithm
+# - PDF text extraction and processing support
 # - Type-check, ESLint, Prettier configured
 # - Pre-commit hooks working
 # - Incremental embedding optimization: 80-90% API cost savings
@@ -20,8 +23,7 @@ current_task: null
 #
 # Next priorities (from backlog.yaml):
 # 1. TASK-014: E2E integration tests
-# 2. TASK-015: Deployment documentation
-# 3. TASK-019: Additional file types (.txt, .pdf, .docx, Google Docs)
-# 4. TASK-021: Production deployment
+# 2. TASK-021: Production deployment
+# 3. TASK-015: Deployment documentation
 #
 # When ready to start next task, move from backlog.yaml here.

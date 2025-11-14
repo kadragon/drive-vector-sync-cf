@@ -14,6 +14,9 @@ import { computeChunkHash } from '../embedding/hash.js';
 import { QdrantClient, VectorPoint, generateVectorId } from '../qdrant/qdrant-client.js';
 import { KVStateManager } from '../state/kv-state-manager.js';
 import { ErrorCollector, logError, toError } from '../errors/index.js';
+import { MetricsCollector } from '../monitoring/metrics.js';
+import { AlertingService, AlertConfig } from '../monitoring/alerting.js';
+import { CostTracker } from '../monitoring/cost-tracker.js';
 
 export interface SyncConfig {
   chunkSize: number;
@@ -33,13 +36,22 @@ export interface SyncResult {
  * Main sync orchestrator
  */
 export class SyncOrchestrator {
+  private metricsCollector: MetricsCollector;
+  private alertingService: AlertingService;
+  private costTracker: CostTracker;
+
   constructor(
     private driveClient: DriveClient,
     private embeddingClient: EmbeddingClient,
     private qdrantClient: QdrantClient,
     private stateManager: KVStateManager,
-    private config: SyncConfig
-  ) {}
+    private config: SyncConfig,
+    alertConfig?: AlertConfig
+  ) {
+    this.metricsCollector = new MetricsCollector();
+    this.alertingService = new AlertingService(alertConfig || {});
+    this.costTracker = new CostTracker();
+  }
 
   /**
    * Run full sync (initial scan)
@@ -52,11 +64,19 @@ export class SyncOrchestrator {
 
     console.log('Starting full sync...');
 
+    // Start metrics and cost tracking
+    this.metricsCollector.start();
+    this.costTracker.reset();
+
     try {
       // 1. Initialize Qdrant collection
+      this.metricsCollector.recordQdrantApiCall();
+      this.costTracker.recordQdrantOperation();
       await this.qdrantClient.initializeCollection();
 
       // 2. List all markdown files
+      this.metricsCollector.recordDriveApiCall();
+      this.costTracker.recordDriveQuery();
       const files = await this.driveClient.listMarkdownFiles(rootFolderId);
       console.log(`Found ${files.length} markdown files`);
 
@@ -69,15 +89,20 @@ export class SyncOrchestrator {
           if (result.status === 'fulfilled') {
             filesProcessed++;
             vectorsUpserted += result.value;
+            this.metricsCollector.recordFileProcessed('added');
+            this.metricsCollector.recordVectorsUpserted(result.value);
           } else {
             const error = toError(result.reason);
             errorCollector.addError(error);
+            this.metricsCollector.recordError(error);
             logError(error);
           }
         }
       }
 
       // 4. Get and save new start page token
+      this.metricsCollector.recordDriveApiCall();
+      this.costTracker.recordDriveQuery();
       const startPageToken = await this.driveClient.getStartPageToken();
       await this.stateManager.updateStartPageToken(startPageToken);
 
@@ -87,6 +112,20 @@ export class SyncOrchestrator {
       const duration = Date.now() - startTime;
       console.log(`Full sync completed in ${duration}ms`);
 
+      // End metrics and send alerts
+      this.metricsCollector.end(true);
+      const metrics = this.metricsCollector.getMetrics();
+      const perfMetrics = this.metricsCollector.getPerformanceMetrics();
+
+      console.log(this.metricsCollector.getSummary());
+      console.log('Cost tracking:', this.costTracker.getSummary());
+
+      // Send success notification
+      await this.alertingService.sendSyncCompleted(metrics, perfMetrics);
+
+      // Check for performance issues
+      await this.alertingService.sendPerformanceAlert(metrics, perfMetrics);
+
       return {
         filesProcessed,
         vectorsUpserted,
@@ -95,7 +134,18 @@ export class SyncOrchestrator {
         duration,
       };
     } catch (error) {
-      logError(error as Error);
+      const err = error as Error;
+
+      // End metrics and send failure alert
+      this.metricsCollector.end(false);
+      this.metricsCollector.recordError(err);
+      const metrics = this.metricsCollector.getMetrics();
+
+      console.log(this.metricsCollector.getSummary());
+
+      await this.alertingService.sendSyncFailed(metrics, err);
+
+      logError(err);
       throw error;
     }
   }
@@ -112,6 +162,10 @@ export class SyncOrchestrator {
 
     console.log('Starting incremental sync...');
 
+    // Start metrics and cost tracking
+    this.metricsCollector.start();
+    this.costTracker.reset();
+
     try {
       // 1. Get current state
       const state = await this.stateManager.getState();
@@ -122,6 +176,8 @@ export class SyncOrchestrator {
       }
 
       // 2. Fetch changes
+      this.metricsCollector.recordDriveApiCall();
+      this.costTracker.recordDriveQuery();
       const { changes, newStartPageToken } = await this.driveClient.fetchChanges(
         state.startPageToken,
         rootFolderId
@@ -132,6 +188,17 @@ export class SyncOrchestrator {
       if (changes.length === 0) {
         // Update token even if no changes
         await this.stateManager.updateStartPageToken(newStartPageToken);
+
+        this.metricsCollector.end(true);
+        const metrics = this.metricsCollector.getMetrics();
+        const perfMetrics = this.metricsCollector.getPerformanceMetrics();
+
+        console.log(this.metricsCollector.getSummary());
+        console.log('Cost tracking:', this.costTracker.getSummary());
+
+        // Send notification for successful sync with no changes
+        await this.alertingService.sendSyncCompleted(metrics, perfMetrics);
+
         return {
           filesProcessed: 0,
           vectorsUpserted: 0,
@@ -145,21 +212,32 @@ export class SyncOrchestrator {
       for (const change of changes) {
         try {
           if (change.type === 'deleted') {
+            this.metricsCollector.recordQdrantApiCall();
+            this.costTracker.recordQdrantOperation();
             await this.qdrantClient.deleteVectorsByFileId(change.fileId);
+            this.metricsCollector.recordFileProcessed('deleted');
+            this.metricsCollector.recordVectorsDeleted(1);
             vectorsDeleted++;
           } else if (change.type === 'modified' && change.file) {
             // Process updated file with incremental optimization
             // (processFile will handle hash comparison and selective re-embedding)
             const count = await this.processFile(change.file);
+            this.metricsCollector.recordFileProcessed('modified');
+            this.metricsCollector.recordVectorsUpserted(count);
             vectorsUpserted += count;
             filesProcessed++;
           }
         } catch (error) {
-          errorCollector.addError(error as Error, {
+          const err = error as Error;
+          errorCollector.addError(err, {
             fileId: change.fileId,
             changeType: change.type,
           });
-          logError(error as Error, { fileId: change.fileId });
+          this.metricsCollector.recordError(err, {
+            fileId: change.fileId,
+            changeType: change.type,
+          });
+          logError(err, { fileId: change.fileId });
         }
       }
 
@@ -172,6 +250,20 @@ export class SyncOrchestrator {
       const duration = Date.now() - startTime;
       console.log(`Incremental sync completed in ${duration}ms`);
 
+      // End metrics and send alerts
+      this.metricsCollector.end(true);
+      const metrics = this.metricsCollector.getMetrics();
+      const perfMetrics = this.metricsCollector.getPerformanceMetrics();
+
+      console.log(this.metricsCollector.getSummary());
+      console.log('Cost tracking:', this.costTracker.getSummary());
+
+      // Send success notification
+      await this.alertingService.sendSyncCompleted(metrics, perfMetrics);
+
+      // Check for performance issues
+      await this.alertingService.sendPerformanceAlert(metrics, perfMetrics);
+
       return {
         filesProcessed,
         vectorsUpserted,
@@ -180,7 +272,18 @@ export class SyncOrchestrator {
         duration,
       };
     } catch (error) {
-      logError(error as Error);
+      const err = error as Error;
+
+      // End metrics and send failure alert
+      this.metricsCollector.end(false);
+      this.metricsCollector.recordError(err);
+      const metrics = this.metricsCollector.getMetrics();
+
+      console.log(this.metricsCollector.getSummary());
+
+      await this.alertingService.sendSyncFailed(metrics, err);
+
+      logError(err);
       throw error;
     }
   }
@@ -193,7 +296,9 @@ export class SyncOrchestrator {
     console.log(`Processing file: ${file.name} (${file.id})`);
 
     // 1. Download file content
-    const content = await this.driveClient.downloadFileContent(file.id);
+    this.metricsCollector.recordDriveApiCall();
+    this.costTracker.recordDriveQuery();
+    const content = await this.driveClient.downloadFileContent(file.id, file.mimeType);
 
     if (!content || content.trim().length === 0) {
       console.log(`Skipping empty file: ${file.name}`);
@@ -202,6 +307,7 @@ export class SyncOrchestrator {
 
     // 2. Chunk text
     const chunks = chunkText(content, this.config.chunkSize);
+    this.metricsCollector.recordChunksProcessed(chunks.length);
     console.log(`File chunked into ${chunks.length} parts`);
 
     // 3. Compute hashes for all chunks
@@ -210,6 +316,8 @@ export class SyncOrchestrator {
     // 4. Fetch existing vectors for this file (for incremental optimization)
     let existingVectors: VectorPoint[] = [];
     try {
+      this.metricsCollector.recordQdrantApiCall();
+      this.costTracker.recordQdrantOperation();
       existingVectors = await this.qdrantClient.getVectorsByFileId(file.id);
       console.log(`Found ${existingVectors.length} existing vectors for file`);
     } catch (error) {
@@ -276,6 +384,11 @@ export class SyncOrchestrator {
     // 7. Generate embeddings only for changed/new chunks
     if (chunksToEmbed.length > 0) {
       const textsToEmbed = chunksToEmbed.map(item => item.chunk.text);
+      const totalTokens = chunksToEmbed.reduce((sum, item) => sum + item.chunk.tokenCount, 0);
+
+      this.metricsCollector.recordEmbeddingApiCall();
+      this.costTracker.recordEmbeddingUsage(totalTokens);
+
       const embeddings = await this.embeddingClient.embedWithBatching(
         textsToEmbed,
         this.config.maxBatchSize
@@ -308,11 +421,15 @@ export class SyncOrchestrator {
 
     if (vectorsToDelete.length > 0) {
       const idsToDelete = vectorsToDelete.map(v => v.id);
+      this.metricsCollector.recordQdrantApiCall();
+      this.costTracker.recordQdrantOperation();
       await this.qdrantClient.deleteVectorsByIds(idsToDelete);
     }
 
     // 9. Upsert all vectors (both reused and newly embedded)
     if (vectorsToUpsert.length > 0) {
+      this.metricsCollector.recordQdrantApiCall();
+      this.costTracker.recordQdrantOperation();
       await this.qdrantClient.upsertVectors(vectorsToUpsert);
       console.log(`Upserted ${vectorsToUpsert.length} vectors for file: ${file.name}`);
     }

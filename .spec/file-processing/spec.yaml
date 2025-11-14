@@ -1,0 +1,100 @@
+spec_id: SPEC-file-processing-1
+title: "Multi-Format File Processing (PDF Support)"
+description: "Support for processing multiple file formats beyond Markdown, including PDF text extraction"
+
+given_when_then:
+  - given: "PDF file exists in Drive folder"
+    when: "Full sync runs"
+    then: "PDF should be detected, downloaded, and text extracted"
+
+  - given: "PDF file is modified"
+    when: "Incremental sync runs"
+    then: "Updated PDF should be re-processed with text extraction"
+
+  - given: "PDF text is extracted"
+    when: "Content is processed"
+    then: "Text should be chunked and embedded like Markdown files"
+
+  - given: "Both .md and .pdf files exist"
+    when: "Sync runs"
+    then: "Both file types should be processed correctly"
+
+  - given: "PDF has no extractable text"
+    when: "Text extraction runs"
+    then: "File should be skipped with appropriate logging"
+
+acceptance_tests:
+  - id: TEST-file-processing-1
+    desc: "Detect PDF files by extension (.pdf)"
+
+  - id: TEST-file-processing-2
+    desc: "Detect PDF files by MIME type (application/pdf)"
+
+  - id: TEST-file-processing-3
+    desc: "Download PDF as binary buffer"
+
+  - id: TEST-file-processing-4
+    desc: "Extract text from PDF using pdfjs-dist"
+
+  - id: TEST-file-processing-5
+    desc: "Handle multi-page PDFs correctly"
+
+  - id: TEST-file-processing-6
+    desc: "Validate PDF buffer before processing"
+
+  - id: TEST-file-processing-7
+    desc: "Process PDF text through chunking pipeline"
+
+  - id: TEST-file-processing-8
+    desc: "Apply incremental optimization to PDF files"
+
+  - id: TEST-file-processing-9
+    desc: "Handle empty PDFs gracefully"
+
+  - id: TEST-file-processing-10
+    desc: "Support PDF files in changes API"
+
+dependencies:
+  packages:
+    - "pdfjs-dist: PDF parsing and text extraction"
+
+  governance:
+    - "env.yaml: supported file extensions"
+
+linked_tasks:
+  - TASK-019
+
+implementation_notes:
+  - "Uses pdfjs-dist library for PDF text extraction"
+  - "Dynamic import of PDF extractor to avoid loading overhead"
+  - "Binary download via Drive API with responseType: 'arraybuffer'"
+  - "Text extraction processes all pages sequentially"
+  - "PDF text is treated identically to Markdown text after extraction"
+  - "Same chunking, embedding, and vector storage pipeline"
+  - "Incremental optimization (chunk hashing) works for PDFs"
+  - "Error handling and retry logic apply to PDF processing"
+
+supported_file_types:
+  - extension: ".md"
+    mime_type: "text/markdown"
+    processing: "Direct text processing"
+
+  - extension: ".pdf"
+    mime_type: "application/pdf"
+    processing: "Binary download → Text extraction → Text processing"
+
+future_extensions:
+  - ".txt files with direct text processing"
+  - ".docx files with document parsing"
+  - "Google Docs native format export"
+  - "Image-based PDFs with OCR support"
+
+modules:
+  - path: "src/utils/pdf-extractor.ts"
+    description: "PDF text extraction utilities"
+
+  - path: "src/drive/drive-client.ts"
+    description: "Enhanced to support PDF downloads and detection"
+
+  - path: "src/sync/sync-orchestrator.ts"
+    description: "Passes mimeType to enable PDF processing"
