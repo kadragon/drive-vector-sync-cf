@@ -590,5 +590,81 @@ describe('DriveClient - Path Building and Filtering', () => {
         DriveClient.fromJSON(invalidJSON);
       }).toThrow(/Failed to parse service account JSON/);
     });
+
+    it('should throw error for null JSON', () => {
+      const invalidJSON = JSON.stringify(null);
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error for array JSON', () => {
+      const invalidJSON = JSON.stringify(['client_email', 'private_key']);
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error for primitive string JSON', () => {
+      const invalidJSON = JSON.stringify('not an object');
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error for primitive number JSON', () => {
+      const invalidJSON = JSON.stringify(123);
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error when client_email is not a string', () => {
+      const invalidJSON = JSON.stringify({
+        client_email: 123,
+        private_key: '-----BEGIN PRIVATE KEY-----\nMOCK_KEY\n-----END PRIVATE KEY-----\n',
+      });
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error when client_email is empty string', () => {
+      const invalidJSON = JSON.stringify({
+        client_email: '',
+        private_key: '-----BEGIN PRIVATE KEY-----\nMOCK_KEY\n-----END PRIVATE KEY-----\n',
+      });
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error when private_key is not a string', () => {
+      const invalidJSON = JSON.stringify({
+        client_email: 'test@test-project.iam.gserviceaccount.com',
+        private_key: { key: 'value' },
+      });
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
+
+    it('should throw error when private_key is empty string', () => {
+      const invalidJSON = JSON.stringify({
+        client_email: 'test@test-project.iam.gserviceaccount.com',
+        private_key: '',
+      });
+
+      expect(() => {
+        DriveClient.fromJSON(invalidJSON);
+      }).toThrow(/Failed to parse service account JSON/);
+    });
   });
 });

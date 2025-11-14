@@ -81,13 +81,21 @@ export class DriveClient {
    */
   static fromJSON(json: string, subject?: string): DriveClient {
     try {
-      const parsed = JSON.parse(json) as {
-        client_email: string;
-        private_key: string;
-      };
+      const parsed = JSON.parse(json);
 
-      if (!parsed.client_email || !parsed.private_key) {
-        throw new Error('Invalid service account JSON: missing client_email or private_key');
+      // Validate that parsed result is an object
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Invalid service account JSON: must be a valid JSON object');
+      }
+
+      // Validate client_email
+      if (typeof parsed.client_email !== 'string' || !parsed.client_email) {
+        throw new Error('Invalid service account JSON: client_email must be a non-empty string');
+      }
+
+      // Validate private_key
+      if (typeof parsed.private_key !== 'string' || !parsed.private_key) {
+        throw new Error('Invalid service account JSON: private_key must be a non-empty string');
       }
 
       return new DriveClient({
