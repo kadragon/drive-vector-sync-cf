@@ -12,7 +12,7 @@ import { EmbeddingClient } from '../embedding/embedding-client.js';
 import { chunkText } from '../embedding/chunking.js';
 import { computeChunkHash } from '../embedding/hash.js';
 import { VectorStoreClient, VectorPoint } from '../types/vector-store.js';
-import { generateVectorId } from '../qdrant/qdrant-client.js';
+import { generateVectorId } from '../vectorize/vector-id.js';
 import { KVStateManager } from '../state/kv-state-manager.js';
 import { ErrorCollector, logError, toError } from '../errors/index.js';
 import { MetricsCollector } from '../monitoring/metrics.js';
