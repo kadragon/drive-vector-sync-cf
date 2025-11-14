@@ -9,20 +9,7 @@
 import { QdrantClient as QdrantRestClient } from '@qdrant/js-client-rest';
 import { QdrantError } from '../errors/index.js';
 import { withRetry } from '../errors/index.js';
-
-export interface VectorPoint {
-  id: string;
-  vector: number[];
-  payload: {
-    file_id: string;
-    file_name: string;
-    file_path: string;
-    chunk_index: number;
-    chunk_hash: string;
-    last_modified: string;
-    text?: string;
-  };
-}
+import { VectorStoreClient, VectorPoint } from '../types/vector-store.js';
 
 export interface QdrantConfig {
   url: string;
@@ -32,8 +19,9 @@ export interface QdrantConfig {
 
 /**
  * Qdrant client wrapper with error handling
+ * Implements VectorStoreClient for compatibility with VectorizeClient
  */
-export class QdrantClient {
+export class QdrantClient implements VectorStoreClient {
   private client: QdrantRestClient;
   private collectionName: string;
 
@@ -256,3 +244,8 @@ export function parseVectorId(vectorId: string): { fileId: string; chunkIndex: n
     chunkIndex: parseInt(chunkIndexStr, 10),
   };
 }
+
+/**
+ * Re-export VectorPoint for backward compatibility
+ */
+export type { VectorPoint };

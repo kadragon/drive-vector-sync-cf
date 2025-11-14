@@ -2,6 +2,17 @@
 # Tasks are moved here when completed
 
 completed_tasks:
+  - task_id: TASK-025
+    spec_id: SPEC-vectorize-migration-1
+    title: "Vectorize migration analysis"
+    completed_at: "2025-11-14T22:15:40Z"
+    duration: "0.5 hours"
+    outcome: "Documented all Qdrant touchpoints and produced mapping to Cloudflare Vectorize (docs/vectorize-migration-analysis.md)."
+    tests_passed: []
+    notes: |
+      - Cataloged QdrantClient usage, data schema, query patterns, batch flows, and error handling.
+      - Compared each operation to Vectorize bindings and highlighted gaps plus migration steps.
+      - Recommended manifest/KV strategy to replace Qdrant scroll + filter deletes.
   - task_id: TASK-013
     spec_id: null
     title: "Set up project infrastructure"

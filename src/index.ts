@@ -13,14 +13,17 @@
 import { DriveClient } from './drive/drive-client.js';
 import { EmbeddingClient } from './embedding/embedding-client.js';
 import { QdrantClient } from './qdrant/qdrant-client.js';
+import { VectorizeClient } from './vectorize/vectorize-client.js';
 import { KVStateManager } from './state/kv-state-manager.js';
 import { SyncOrchestrator } from './sync/sync-orchestrator.js';
 import { AdminHandler, validateAdminToken } from './api/admin-handler.js';
 import { logError } from './errors/index.js';
 
 export interface Env {
-  // KV Namespace
+  // Cloudflare Workers bindings
   SYNC_STATE: KVNamespace;
+  FILE_VECTOR_INDEX: KVNamespace;
+  VECTORIZE: VectorizeIndex;
 
   // Secrets
   // Service Account JSON string from Google Cloud Console
@@ -29,9 +32,11 @@ export interface Env {
   GOOGLE_IMPERSONATION_EMAIL?: string;
   GOOGLE_ROOT_FOLDER_ID: string;
   OPENAI_API_KEY: string;
-  QDRANT_URL: string;
-  QDRANT_API_KEY: string;
   ADMIN_TOKEN: string;
+
+  // Deprecated (for backward compatibility during migration)
+  QDRANT_URL?: string;
+  QDRANT_API_KEY?: string;
 
   // Environment variables
   CHUNK_SIZE: string;
@@ -47,7 +52,46 @@ export interface Env {
 }
 
 /**
+ * Cloudflare Vectorize Index interface
+ * (Type definition for Workers runtime binding)
+ */
+export interface VectorizeIndex {
+  upsert(vectors: VectorizeVector[]): Promise<{ count: number }>;
+  deleteByIds(ids: string[]): Promise<{ count: number }>;
+  getByIds(ids: string[]): Promise<VectorizeMatch[]>;
+  query(vector: number[], options?: VectorizeQueryOptions): Promise<VectorizeQueryResult>;
+}
+
+export interface VectorizeVector {
+  id: string;
+  values: number[];
+  metadata?: Record<string, string | number | boolean>;
+}
+
+export interface VectorizeMatch {
+  id: string;
+  values?: number[];
+  metadata?: Record<string, unknown>;
+  score?: number;
+}
+
+export interface VectorizeQueryOptions {
+  topK?: number;
+  returnValues?: boolean;
+  returnMetadata?: boolean | 'indexed' | 'all';
+  filter?: Record<string, unknown>;
+}
+
+export interface VectorizeQueryResult {
+  matches: VectorizeMatch[];
+  count: number;
+}
+
+/**
  * Initialize all clients and orchestrator
+ *
+ * Migration Note: Supports both Qdrant and Vectorize.
+ * Prefers Vectorize if VECTORIZE_INDEX binding exists.
  */
 function initializeServices(env: Env) {
   // Initialize Drive client with Service Account
@@ -60,18 +104,32 @@ function initializeServices(env: Env) {
     apiKey: env.OPENAI_API_KEY,
   });
 
-  const qdrantClient = new QdrantClient({
-    url: env.QDRANT_URL,
-    apiKey: env.QDRANT_API_KEY,
-    collectionName: env.QDRANT_COLLECTION_NAME,
-  });
+  // Vector store client - prefer Vectorize over Qdrant
+  let vectorClient;
+  if (env.VECTORIZE && env.FILE_VECTOR_INDEX) {
+    console.log('Using Cloudflare Vectorize for vector storage');
+    vectorClient = new VectorizeClient({
+      index: env.VECTORIZE,
+      fileIndex: env.FILE_VECTOR_INDEX,
+      collectionName: env.QDRANT_COLLECTION_NAME, // Keep same name for compatibility
+    });
+  } else if (env.QDRANT_URL && env.QDRANT_API_KEY) {
+    console.log('Using Qdrant Cloud for vector storage (deprecated)');
+    vectorClient = new QdrantClient({
+      url: env.QDRANT_URL,
+      apiKey: env.QDRANT_API_KEY,
+      collectionName: env.QDRANT_COLLECTION_NAME,
+    });
+  } else {
+    throw new Error('No vector store configured. Please set up either Vectorize or Qdrant.');
+  }
 
   const stateManager = new KVStateManager(env.SYNC_STATE);
 
   const orchestrator = new SyncOrchestrator(
     driveClient,
     embeddingClient,
-    qdrantClient,
+    vectorClient,
     stateManager,
     {
       chunkSize: parseInt(env.CHUNK_SIZE || '2000', 10),
@@ -88,14 +146,14 @@ function initializeServices(env: Env) {
   const adminHandler = new AdminHandler(
     orchestrator,
     stateManager,
-    qdrantClient,
+    vectorClient,
     env.GOOGLE_ROOT_FOLDER_ID
   );
 
   return {
     driveClient,
     embeddingClient,
-    qdrantClient,
+    vectorClient,
     stateManager,
     orchestrator,
     adminHandler,

@@ -379,6 +379,18 @@
   - ADDED: GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_IMPERSONATION_EMAIL (optional)
 - Service Account JSON must be shared with target Google Drive folder
 
+### Session 5: 2025-11-14 22:00-22:15 - Vectorize Migration Analysis (TASK-025)
+
+- Authored `docs/vectorize-migration-analysis.md` capturing every Qdrant touchpoint, matching it to Cloudflare Vectorize bindings, and noting gaps/workarounds.
+- Outcomes:
+  - Confirmed need to pre-provision Vectorize indexes (no runtime create) and to swap Qdrant secrets/env vars for `[[vectorize]]` bindings.
+  - Proposed KV-based manifest (per `file_id`) to replace `scroll` + filter deletes for reuse/deletes since Vectorize only offers `getByIds`/`deleteByIds`.
+  - Flagged async mutation handling (track `mutationId`, compare with `describe().processedUpToMutation`) as a new reliability requirement.
+- Follow-ups:
+  1. Define `VectorizeClient` abstraction + tests mirroring current Qdrant surface before touching the orchestrator.
+  2. Add Wrangler binding + env docs updates, and remove `QDRANT_*` secrets once code migrates.
+  3. Extend monitoring to capture mutation lag + rename cost/metric labels (`vectorIndexCalls`).
+
 ## Project Statistics
 
 - **Total Lines of Code:** ~3100+ LOC
