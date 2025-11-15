@@ -1,3 +1,6 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
 # Run type check on all files
 echo "Running type check..."
 npm run type-check
