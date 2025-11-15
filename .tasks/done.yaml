@@ -2,6 +2,30 @@
 # Tasks are moved here when completed
 
 completed_tasks:
+  - task_id: TASK-030
+    spec_id: SPEC-web-dashboard-1
+    title: "Implement dashboard UI components"
+    completed_at: "2025-11-15T21:15:00Z"
+    duration: "5 hours"
+    outcome: "Frontend dashboard with live sync stats, charts, and manual controls"
+    tests_passed:
+      - npm run -w frontend test
+    notes: |
+      Delivered the first functional iteration of the Drive Sync dashboard.
+
+      Scope:
+      - Added Vitest + Testing Library + jsdom config for the frontend workspace (RED phase for TEST-web-dashboard-2~6).
+      - Built reusable hooks (useSyncStatus/useSyncStats/useSyncHistory/useNextSyncTime) with 30s polling + error handling.
+      - Implemented dashboard UI: StatsCard grid, SyncStatusPanel, history & vector charts (Recharts), and ActionButtons for manual sync + refresh.
+      - Replaced placeholder App.tsx with production layout, DaisyUI theming, and responsive sections tied to Worker APIs.
+      - Added targeted Vitest suites (App, hooks, ActionButtons) covering TEST-web-dashboard-2/3/4/5/6 behavior.
+
+      Result:
+      - Auto-refresh dashboard stays in sync with /admin APIs.
+      - Manual sync flow (token prompt → POST /admin/resync) wired with optimistic messaging.
+      - Charts render historical files/vector metrics with responsive containers.
+      - Next steps: integrate static asset serving (TASK-031) + comprehensive docs/tests (TASK-032).
+
   - task_id: TASK-015
     spec_id: null
     title: "Create deployment documentation"

@@ -55,7 +55,7 @@
     "*.ts": [
       "eslint --fix",
       "prettier --write",
-      "vitest related --run"
+      "vitest related --run --environment jsdom"
     ]
   }
 }

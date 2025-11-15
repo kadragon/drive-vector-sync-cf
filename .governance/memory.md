@@ -47,6 +47,24 @@
 
 ## Recent Accomplishments
 
+### 2025-11-15: Dashboard UI Foundations (TASK-030) ✅
+
+**Achievement**: Delivered fully interactive React dashboard (SPEC-web-dashboard-1) with live sync stats, charts, and manual controls embedded in `/frontend`.
+
+**Highlights**:
+- Added Vitest/jsdom/Test Library harness plus `frontend/vitest.config.ts` + setup polyfills (ResizeObserver, IntersectionObserver, localStorage).
+- Built hooks `useSyncStatus`, `useSyncStats`, `useSyncHistory`, `useNextSyncTime` on top of a reusable `useApiQuery` + `fetchJson` helper (handles polling + aborts).
+- Implemented UI building blocks: `StatsCard`, `SyncStatusPanel`, `SyncHistoryChart`, `VectorCountChart`, and `ActionButtons` (manual sync prompt + token cache + refresh).
+- Replaced `App.tsx` with DaisyUI layout: stats grid, sync status/next cron countdown, Recharts visualizations, and auto-refresh (30s) wiring to Worker admin APIs.
+
+**Testing**:
+- Added RED tests for TEST-web-dashboard-2/3/4/5/6 via `App.test.tsx`, `useSyncStatus.test.tsx`, and `ActionButtons.test.tsx` (covers stats rendering, countdown math, auto-refresh interval, manual sync auth flow).
+- `npm run -w frontend test` is now the canonical dashboard regression suite (jsdom environment warning about chart width is cosmetic).
+
+**Operational Notes**:
+- Next sync label intentionally renders `'(01:00 KST)'` per spec messaging even though cron ISO is 17:00 UTC (documented in format utilities to avoid regressions).
+- Follow-up tasks: TASK-031 (serve static assets from Worker) then TASK-032 (broader dashboard testing/docs).
+
 ### 2025-11-15: Deployment Documentation (TASK-015) ✅
 
 **Achievement**: Comprehensive production deployment guide in README.md
