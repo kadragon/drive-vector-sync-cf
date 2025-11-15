@@ -588,6 +588,63 @@
 - **Better integration**: Native Cloudflare platform features
 - **Cleaner codebase**: Single vector store implementation
 
+### Session 8: 2025-11-15 - Web Dashboard Planning (Current Session)
+
+**Goal**: Plan web UI for sync status monitoring with future RAG/worknote features
+
+**User Requirements**:
+- Web dashboard for sync status (how much remaining, next sync schedule)
+- Future: RAG system and worknote creation features
+- First priority: Sync monitoring interface
+
+**Technology Decisions** (User Selected):
+- **Deployment**: Worker-embedded (single endpoint, no Pages)
+- **Framework**: React + TypeScript
+- **UI Library**: DaisyUI (Tailwind CSS plugin)
+- **Charts**: Recharts (React-native)
+
+**Deliverables**:
+1. **Spec Created**: `.spec/web-dashboard/spec.yaml`
+   - Complete GWT scenarios for dashboard
+   - 6 acceptance tests defined
+   - UI component specifications
+   - API extension requirements
+
+2. **Implementation Plan**: `.spec/web-dashboard/IMPLEMENTATION_PLAN.md`
+   - 5-phase implementation (15 hours total)
+   - Detailed architecture and file structure
+   - Component-by-component breakdown
+   - Build and deployment strategy
+
+3. **Tasks Added**: 5 new tasks in backlog.yaml
+   - TASK-028: Enhanced admin API (2h)
+     - Extend /admin/status with isLocked, nextScheduledSync, lastSyncDuration
+     - Create /admin/history endpoint for charting
+   - TASK-029: Vite + React frontend setup (3h)
+     - Initialize React project with Tailwind + DaisyUI
+     - Configure build for Worker embedding
+   - TASK-030: Dashboard UI components (5h)
+     - Stats cards, charts, sync status, action buttons
+     - Custom hooks for API fetching with auto-refresh
+   - TASK-031: Worker integration (3h)
+     - Serve static assets from Worker
+     - Route GET / to index.html
+   - TASK-032: Testing and documentation (2h)
+     - Component tests, E2E tests
+     - Update README with dashboard usage
+
+**Architecture Highlights**:
+- **Frontend Structure**: `/frontend` directory with Vite + React
+- **Static Asset Serving**: Vite build output embedded in Worker bundle
+- **API Proxy**: Vite dev server proxies /admin/* to Worker during development
+- **Auto-refresh**: Dashboard polls API every 30 seconds
+- **Charts**: Recharts for sync history visualization
+
+**Next Steps**:
+- Start with TASK-028 (backend API enhancements)
+- Then TASK-029 (frontend setup)
+- Deploy web dashboard after TASK-032
+
 ## Project Statistics
 
 - **Total Lines of Code:** ~3400 LOC (excluding tests)
@@ -596,5 +653,7 @@
 - **Dependencies:** 4 production, 9 dev (all up-to-date, 0 vulnerabilities)
 - **Documentation:** ~500 lines of comprehensive deployment guides
 - **Time Invested:** ~26 hours (dev + testing + docs)
-- **Remaining Work:** ~3 hours (production deployment only)
+- **Remaining Work:**
+  - Production deployment: ~3 hours (TASK-021)
+  - Web dashboard: ~15 hours (TASK-028 ~ TASK-032)
 - **Cost Optimization:** 80-90% reduction in embedding API calls for updates + eliminated Qdrant Cloud costs

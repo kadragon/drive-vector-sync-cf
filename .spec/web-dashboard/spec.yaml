@@ -1,0 +1,182 @@
+spec_id: SPEC-web-dashboard-1
+title: "Web Dashboard for Sync Status Monitoring"
+description: |
+  Web UI for monitoring Google Drive → Vectorize sync status.
+  Displays real-time sync statistics, progress, and next scheduled sync time.
+  Future extensibility: RAG system and worknote creation features.
+
+architecture:
+  deployment: worker-embedded
+  framework: React + TypeScript
+  ui_library: DaisyUI (Tailwind CSS)
+  charts: Recharts
+  build_tool: Vite
+  bundling: Static assets embedded in Worker
+
+given_when_then:
+  - given: "User navigates to the worker root URL (GET /)"
+    when: "Worker receives the request"
+    then: "Serve HTML page with React dashboard"
+
+  - given: "React app loads in browser"
+    when: "Component mounts"
+    then: "Fetch sync status from /admin/status and /admin/stats APIs"
+
+  - given: "Sync status data is fetched"
+    when: "Data is received successfully"
+    then: "Display dashboard with sync statistics, charts, and next sync time"
+
+  - given: "Sync is currently running (lock exists)"
+    when: "Status API returns isLocked: true"
+    then: "Show 'Sync in Progress' indicator with loading animation"
+
+  - given: "User is viewing dashboard"
+    when: "30 seconds have passed"
+    then: "Auto-refresh data by re-fetching APIs"
+
+  - given: "User clicks 'Trigger Sync' button"
+    when: "POST /admin/resync is called with admin token"
+    then: "Show confirmation and refresh status after completion"
+
+acceptance_tests:
+  - id: TEST-web-dashboard-1
+    desc: "Root endpoint (GET /) serves HTML with React app"
+    steps:
+      - "Send GET request to /"
+      - "Verify response is HTML content-type"
+      - "Verify HTML contains root div and script tag"
+
+  - id: TEST-web-dashboard-2
+    desc: "Dashboard displays sync statistics correctly"
+    steps:
+      - "Mock /admin/status API response"
+      - "Mock /admin/stats API response"
+      - "Render dashboard component"
+      - "Verify filesProcessed, errorCount, vectorCount are displayed"
+      - "Verify lastSyncTime is formatted correctly"
+
+  - id: TEST-web-dashboard-3
+    desc: "Next sync time calculation is accurate"
+    steps:
+      - "Set current time to 2025-11-15 10:00 UTC"
+      - "Verify next sync shows '2025-11-15 17:00 UTC (01:00 KST)'"
+      - "Set current time to 2025-11-15 18:00 UTC"
+      - "Verify next sync shows '2025-11-16 17:00 UTC (01:00 KST)'"
+
+  - id: TEST-web-dashboard-4
+    desc: "Auto-refresh updates data every 30 seconds"
+    steps:
+      - "Mount dashboard component"
+      - "Mock API to return initial data"
+      - "Wait 30 seconds"
+      - "Verify API is called again"
+      - "Verify displayed data is updated"
+
+  - id: TEST-web-dashboard-5
+    desc: "Charts render sync history and vector count"
+    steps:
+      - "Provide mock sync history data"
+      - "Render dashboard with Recharts"
+      - "Verify line chart shows filesProcessed trend"
+      - "Verify bar chart shows vectorCount"
+
+  - id: TEST-web-dashboard-6
+    desc: "Manual sync trigger requires authentication"
+    steps:
+      - "Click 'Trigger Sync' button"
+      - "Prompt for admin token if not saved"
+      - "Send POST /admin/resync with Bearer token"
+      - "Verify response and show success/error message"
+
+ui_components:
+  layout:
+    - header: "Drive Vector Sync Dashboard"
+    - stats_cards:
+        - last_sync_time: "Last Sync: 2 hours ago"
+        - files_processed: "Files: 150"
+        - vector_count: "Vectors: 250"
+        - error_count: "Errors: 0"
+    - sync_status:
+        - current_status: "Idle | In Progress | Error"
+        - next_sync_time: "Next Sync: Today 01:00 KST (in 3 hours)"
+        - progress_bar: "Optional: show during sync"
+    - charts:
+        - sync_history_chart: "Line chart of filesProcessed over time"
+        - vector_count_chart: "Bar chart of vector counts"
+    - actions:
+        - trigger_sync_button: "Trigger Manual Sync"
+        - refresh_button: "Refresh Now"
+
+  theme:
+    - dark_mode: "Support dark mode via DaisyUI themes"
+    - responsive: "Mobile-friendly layout"
+
+api_extensions:
+  enhanced_status_endpoint:
+    path: "/admin/status"
+    new_fields:
+      - isLocked: boolean  # Indicates if sync is currently running
+      - nextScheduledSync: string  # ISO timestamp of next cron execution
+      - lastSyncDuration: number  # Duration in milliseconds
+
+  sync_history_endpoint:
+    path: "/admin/history"
+    description: "Returns last N sync results for charting"
+    response:
+      - timestamp: string
+      - filesProcessed: number
+      - vectorsUpserted: number
+      - vectorsDeleted: number
+      - duration: number
+      - errors: string[]
+
+build_integration:
+  vite_config:
+    - build_output: "dist/"
+    - base_path: "/"
+    - minify: true
+    - sourcemap: false
+
+  worker_integration:
+    - embed_strategy: "Import static assets as strings"
+    - html_route: "GET /"
+    - static_routes: "GET /assets/*"
+    - content_types:
+        - ".html": "text/html"
+        - ".js": "application/javascript"
+        - ".css": "text/css"
+
+dependencies:
+  frontend_packages:
+    - react: "^18.3.0"
+    - react-dom: "^18.3.0"
+    - typescript: "^5.7.0"
+    - tailwindcss: "^3.4.0"
+    - daisyui: "^4.12.0"
+    - recharts: "^2.15.0"
+    - vite: "^6.0.0"
+    - "@vitejs/plugin-react": "^4.3.0"
+
+  worker_changes:
+    - routing: "Add GET / and GET /assets/* handlers"
+    - asset_bundling: "Import Vite build output"
+    - content_serving: "Serve HTML/JS/CSS with correct headers"
+
+future_extensions:
+  - id: RAG_SYSTEM
+    desc: "Query interface for RAG-based search on vectors"
+    routes:
+      - "/query": "Search interface"
+      - "/api/search": "Vector similarity search endpoint"
+
+  - id: WORKNOTE_EDITOR
+    desc: "Create and manage worknotes synced to Drive"
+    routes:
+      - "/notes": "Worknote list and editor"
+      - "/api/notes": "CRUD endpoints for notes"
+
+linked_tasks:
+  - TASK-028
+  - TASK-029
+  - TASK-030
+  - TASK-031
