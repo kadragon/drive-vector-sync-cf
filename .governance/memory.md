@@ -588,72 +588,123 @@
 - **Better integration**: Native Cloudflare platform features
 - **Cleaner codebase**: Single vector store implementation
 
-### Session 8: 2025-11-15 - Web Dashboard Planning (Current Session)
+### Session 8: 2025-11-15 20:00-20:30 - Web Dashboard Backend API + Frontend Setup ✅
 
-**Goal**: Plan web UI for sync status monitoring with future RAG/worknote features
+**Completed Tasks**:
+- TASK-028: Enhanced admin API endpoints for dashboard (2h)
+- TASK-029: Vite + React frontend setup with DaisyUI and Recharts (0.33h)
 
-**User Requirements**:
-- Web dashboard for sync status (how much remaining, next sync schedule)
-- Future: RAG system and worknote creation features
-- First priority: Sync monitoring interface
+**TASK-028 Achievements**:
+Extended /admin/status endpoint with dashboard-ready fields:
+- isLocked: boolean (sync in progress indicator)
+- nextScheduledSync: ISO timestamp (calculated from cron schedule)
+- lastSyncDuration: number (milliseconds of last sync)
 
-**Technology Decisions** (User Selected):
-- **Deployment**: Worker-embedded (single endpoint, no Pages)
-- **Framework**: React + TypeScript
-- **UI Library**: DaisyUI (Tailwind CSS plugin)
-- **Charts**: Recharts (React-native)
+Created new /admin/history endpoint:
+- Returns last 30 sync results for charting
+- Stored in KV with rolling window (30 entries max)
+- Response includes: timestamp, filesProcessed, vectorsUpserted, vectorsDeleted, duration, errors[]
 
-**Deliverables**:
-1. **Spec Created**: `.spec/web-dashboard/spec.yaml`
-   - Complete GWT scenarios for dashboard
-   - 6 acceptance tests defined
-   - UI component specifications
-   - API extension requirements
+Files modified:
+- src/state/kv-state-manager.ts: Added SyncHistoryEntry interface and history methods
+  * saveSyncHistory(entry: SyncHistoryEntry)
+  * getSyncHistory(limit?: number)
+  * Implements rolling window with KV pagination to prevent unbounded growth
+- src/api/admin-handler.ts: Extended /status and added /history endpoint
+- src/sync/sync-orchestrator.ts: Save duration and history after each sync
+- src/utils/cron.ts: New file with cron schedule calculation utilities
+  * getNextScheduledSync(cronExpression: string)
+  * parseCronExpression()
 
-2. **Implementation Plan**: `.spec/web-dashboard/IMPLEMENTATION_PLAN.md`
-   - 5-phase implementation (15 hours total)
-   - Detailed architecture and file structure
-   - Component-by-component breakdown
-   - Build and deployment strategy
+Tests added: 16 new unit tests
+Total tests: 267 passing (251 existing + 16 new)
 
-3. **Tasks Added**: 5 new tasks in backlog.yaml
-   - TASK-028: Enhanced admin API (2h)
-     - Extend /admin/status with isLocked, nextScheduledSync, lastSyncDuration
-     - Create /admin/history endpoint for charting
-   - TASK-029: Vite + React frontend setup (3h)
-     - Initialize React project with Tailwind + DaisyUI
-     - Configure build for Worker embedding
-   - TASK-030: Dashboard UI components (5h)
-     - Stats cards, charts, sync status, action buttons
-     - Custom hooks for API fetching with auto-refresh
-   - TASK-031: Worker integration (3h)
-     - Serve static assets from Worker
-     - Route GET / to index.html
-   - TASK-032: Testing and documentation (2h)
-     - Component tests, E2E tests
-     - Update README with dashboard usage
+**TASK-029 Achievements**:
+Frontend Project Setup:
+- Initialized Vite 7 with React 18 + TypeScript template in /frontend
+- Installed dependencies:
+  * tailwindcss@3.4.17 + postcss + autoprefixer
+  * daisyui@5.5.4
+  * recharts@2.15.0
+- Created tailwind.config.js with DaisyUI plugin and light/dark themes
+- Created postcss.config.js for Tailwind processing
+- Updated src/index.css with Tailwind directives
 
-**Architecture Highlights**:
-- **Frontend Structure**: `/frontend` directory with Vite + React
-- **Static Asset Serving**: Vite build output embedded in Worker bundle
-- **API Proxy**: Vite dev server proxies /admin/* to Worker during development
-- **Auto-refresh**: Dashboard polls API every 30 seconds
-- **Charts**: Recharts for sync history visualization
+Project Structure:
+- Created src/components/ for React components
+- Created src/hooks/ for custom hooks
+- Created src/types/ for TypeScript definitions
+- Created src/utils/ for utility functions
 
-**Next Steps**:
-- Start with TASK-028 (backend API enhancements)
-- Then TASK-029 (frontend setup)
-- Deploy web dashboard after TASK-032
+Vite Configuration (vite.config.ts):
+- Build output: dist/ (minified, no sourcemaps)
+- Dev server: port 5173
+- API proxy: /admin/* and /health → http://localhost:8787
+- Optimized rollup options for clean output
+
+Type Definitions (src/types/api.ts):
+- SyncStatus interface (lastSyncTime, filesProcessed, errorCount, isLocked, etc.)
+- SyncStats interface (vectorCount, collectionInfo)
+- SyncHistoryEntry interface (timestamp, metrics, errors)
+- HealthCheck and ErrorResponse interfaces
+
+App Component (src/App.tsx):
+- DaisyUI navbar with title and dark mode toggle
+- Hero section with health check status badge
+- Four stat cards (Last Sync, Files Processed, Vector Count, Errors)
+- Responsive grid layout (1/2/4 columns based on screen size)
+- Health check API fetch on component mount
+
+Root Package.json Scripts:
+- frontend:dev - Start Vite dev server
+- frontend:build - Build frontend for production
+- frontend:install - Install frontend dependencies
+
+Documentation:
+- Created comprehensive frontend/README.md
+- Development workflow documented
+- API proxy configuration explained
+- Next steps referenced
+
+Build Verification:
+- Successful production build
+- Output: 0.46 kB HTML, 35.20 kB CSS, 196.86 kB JS
+- All assets minified and ready for Worker embedding
+
+**Next Priority**:
+- TASK-030: Implement dashboard UI components (5 hours)
+  * Stats cards with live data
+  * Sync status indicators
+  * History charts (Recharts)
+  * Manual sync trigger
+  * Custom hooks for API fetching
+
+**Architecture Decision - Folder Structure**:
+- User feedback: Current `src/` and `frontend/` structure is confusing
+- Decision: Keep current structure for now, refactor later
+- Created TASK-033 for future refactoring:
+  * Rename `src/` → `worker/` for clarity
+  * Scheduled after TASK-032 (before production deployment)
+  * Estimated effort: 1.5 hours
+  * Benefits: Clear separation, better DX, easier onboarding
+- Final structure will be:
+  ```
+  drive-vector-sync-cf/
+  ├── worker/           # Cloudflare Workers backend
+  ├── frontend/         # React dashboard
+  └── package.json      # Root dependencies
+  ```
 
 ## Project Statistics
 
-- **Total Lines of Code:** ~3400 LOC (excluding tests)
-- **Test Coverage:** 251 tests passing (227 unit + 24 E2E, 100% pass rate)
-- **Modules:** 8 core modules + vectorize client + monitoring + utilities
+- **Total Lines of Code:** ~3500 LOC (excluding tests and frontend)
+- **Test Coverage:** 267 tests passing (243 unit + 24 E2E, 100% pass rate)
+- **Modules:** 8 core modules + vectorize client + monitoring + utilities + cron utils
 - **Dependencies:** 4 production, 9 dev (all up-to-date, 0 vulnerabilities)
-- **Documentation:** ~500 lines of comprehensive deployment guides
-- **Time Invested:** ~26 hours (dev + testing + docs)
+- **Frontend:** Vite + React + DaisyUI + Recharts (241 npm packages, 0 vulnerabilities)
+- **Documentation:** ~500 lines of comprehensive deployment guides + frontend README
+- **Time Invested:** ~28.5 hours (dev + testing + docs + frontend setup)
 - **Remaining Work:**
   - Production deployment: ~3 hours (TASK-021)
-  - Web dashboard: ~15 hours (TASK-028 ~ TASK-032)
+  - Web dashboard UI: ~10 hours (TASK-030 ~ TASK-032)
 - **Cost Optimization:** 80-90% reduction in embedding API calls for updates + eliminated Qdrant Cloud costs

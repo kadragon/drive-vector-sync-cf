@@ -13,7 +13,10 @@
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint src --ext .ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "frontend:install": "cd frontend && npm install"
   },
   "keywords": [
     "cloudflare-workers",
