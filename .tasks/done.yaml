@@ -2,6 +2,24 @@
 # Tasks are moved here when completed
 
 completed_tasks:
+  - task_id: TASK-027
+    spec_id: SPEC-vectorize-migration-1
+    title: "Complete Qdrant → Vectorize migration and cleanup"
+    completed_at: "2025-11-15T08:30:00Z"
+    duration: "0.5 hours"
+    outcome: "Successfully migrated entire codebase from Qdrant to Cloudflare Vectorize. All 227 tests passing, zero Qdrant code remaining."
+    tests_passed:
+      - All 227 unit tests
+    notes: |
+      - Renamed monitoring methods: recordQdrantApiCall → recordVectorIndexCall
+      - Updated MetricsCollector, CostTracker, sync-orchestrator, and all tests
+      - Removed Qdrant support from index.ts (VectorizeClient only)
+      - Deleted src/qdrant/ directory completely
+      - Removed @qdrant/js-client-rest package (27 packages removed)
+      - Updated wrangler.toml: removed QDRANT_* secrets, changed to INDEX_NAME
+      - Updated .governance files (memory.md, env.yaml)
+      - Type-check: 0 errors, ESLint: 0 errors, 4 warnings (unchanged)
+      - Benefits: simplified deployment, cost reduction, better platform integration
   - task_id: TASK-026
     spec_id: SPEC-vectorize-migration-1
     title: "Fix vector count inflation on repeated upserts"

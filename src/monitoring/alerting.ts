@@ -125,7 +125,7 @@ export class AlertingService {
               },
               {
                 name: 'API Calls',
-                value: `Embedding: ${metrics.embeddingApiCalls}, Drive: ${metrics.driveApiCalls}, Qdrant: ${metrics.qdrantApiCalls}`,
+                value: `Embedding: ${metrics.embeddingApiCalls}, Drive: ${metrics.driveApiCalls}, Vectorize: ${metrics.vectorIndexCalls}`,
                 inline: false,
               },
               {

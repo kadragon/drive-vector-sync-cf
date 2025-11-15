@@ -1,5 +1,5 @@
 /**
- * Main entry point for Google Drive → Qdrant Vector Sync Worker
+ * Main entry point for Google Drive → Cloudflare Vectorize Sync Worker
  *
  * Handles:
  * - Scheduled cron triggers (daily sync)
@@ -7,12 +7,11 @@
  *
  * Trace:
  *   spec_id: SPEC-scheduling-1, SPEC-admin-api-1
- *   task_id: TASK-009, TASK-011
+ *   task_id: TASK-009, TASK-011, TASK-027
  */
 
 import { DriveClient } from './drive/drive-client.js';
 import { EmbeddingClient } from './embedding/embedding-client.js';
-import { QdrantClient } from './qdrant/qdrant-client.js';
 import { VectorizeClient } from './vectorize/vectorize-client.js';
 import { KVStateManager } from './state/kv-state-manager.js';
 import { SyncOrchestrator } from './sync/sync-orchestrator.js';
@@ -22,8 +21,8 @@ import type { VectorizeIndex } from './types/vectorize.js';
 
 export interface Env {
   // Cloudflare Workers bindings
-  SYNC_STATE: KVNamespace;
-  FILE_VECTOR_INDEX: KVNamespace;
+  WORKNOTE_SYNC_STATE: KVNamespace;
+  WORKNOTE_FILE_VECTOR_INDEX: KVNamespace;
   VECTORIZE: VectorizeIndex;
 
   // Secrets
@@ -35,16 +34,12 @@ export interface Env {
   OPENAI_API_KEY: string;
   ADMIN_TOKEN: string;
 
-  // Deprecated (for backward compatibility during migration)
-  QDRANT_URL?: string;
-  QDRANT_API_KEY?: string;
-
   // Environment variables
   CHUNK_SIZE: string;
   MAX_BATCH_SIZE: string;
   MAX_CONCURRENCY: string;
   MAX_RETRIES: string;
-  QDRANT_COLLECTION_NAME: string;
+  INDEX_NAME: string;
 
   // Monitoring and alerting (optional)
   WEBHOOK_URL?: string;
@@ -57,9 +52,6 @@ export type { VectorizeIndex };
 
 /**
  * Initialize all clients and orchestrator
- *
- * Migration Note: Supports both Qdrant and Vectorize.
- * Prefers Vectorize if VECTORIZE_INDEX binding exists.
  */
 function initializeServices(env: Env) {
   // Initialize Drive client with Service Account
@@ -72,27 +64,15 @@ function initializeServices(env: Env) {
     apiKey: env.OPENAI_API_KEY,
   });
 
-  // Vector store client - prefer Vectorize over Qdrant
-  let vectorClient;
-  if (env.VECTORIZE && env.FILE_VECTOR_INDEX) {
-    console.log('Using Cloudflare Vectorize for vector storage');
-    vectorClient = new VectorizeClient({
-      index: env.VECTORIZE as VectorizeIndex,
-      fileIndex: env.FILE_VECTOR_INDEX,
-      collectionName: env.QDRANT_COLLECTION_NAME, // Keep same name for compatibility
-    });
-  } else if (env.QDRANT_URL && env.QDRANT_API_KEY) {
-    console.log('Using Qdrant Cloud for vector storage (deprecated)');
-    vectorClient = new QdrantClient({
-      url: env.QDRANT_URL,
-      apiKey: env.QDRANT_API_KEY,
-      collectionName: env.QDRANT_COLLECTION_NAME,
-    });
-  } else {
-    throw new Error('No vector store configured. Please set up either Vectorize or Qdrant.');
-  }
+  // Vector store client - Cloudflare Vectorize
+  console.log('Using Cloudflare Vectorize for vector storage');
+  const vectorClient = new VectorizeClient({
+    index: env.VECTORIZE as VectorizeIndex,
+    fileIndex: env.WORKNOTE_FILE_VECTOR_INDEX,
+    collectionName: env.INDEX_NAME,
+  });
 
-  const stateManager = new KVStateManager(env.SYNC_STATE);
+  const stateManager = new KVStateManager(env.WORKNOTE_SYNC_STATE);
 
   const orchestrator = new SyncOrchestrator(
     driveClient,

@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-**Project Name:** Google Drive → Qdrant Vector Sync System
+**Project Name:** Google Drive → Cloudflare Vectorize Sync System
 **Platform:** Cloudflare Workers
-**Purpose:** Automated RAG data pipeline that syncs Google Drive Markdown files to Qdrant Cloud
+**Purpose:** Automated RAG data pipeline that syncs Google Drive Markdown files to Cloudflare Vectorize
 
 ## Architecture Decisions
 
@@ -12,8 +12,8 @@
 1. **Cloudflare Workers** - Serverless execution environment
 2. **Google Drive API** - Source document repository
 3. **OpenAI Embedding API** - text-embedding-3-large model (3072 dimensions)
-4. **Qdrant Cloud** - Vector database storage (cosine distance, HNSW indexing)
-5. **Cloudflare KV** - State persistence (startPageToken, sync metadata)
+4. **Cloudflare Vectorize** - Vector index storage (cosine distance, built-in)
+5. **Cloudflare KV** - State persistence (startPageToken, sync metadata, file-to-vector mapping)
 
 ### Key Design Decisions
 - **Incremental Updates**: Use Google Drive `changes` API with startPageToken
@@ -35,9 +35,9 @@
 - Service Account authentication for Google Drive (JWT-based, no token refresh needed)
 - Read-only scope for Google Drive: `drive.readonly`
 - Optional domain-wide delegation support for impersonation
-- Qdrant API keys in Secrets
 - Admin API protected with Bearer token authentication
-- KV for state persistence only
+- KV for state persistence and file-vector index
+- Vectorize index pre-provisioned via wrangler.toml binding
 
 ## Known Patterns
 - Use Promise.allSettled with toError() for safe error handling
@@ -54,7 +54,7 @@
 - **Tests:** 11 passing
 
 ### Error Handling (`src/errors/`)
-- Custom error classes: SyncError, DriveError, EmbeddingError, QdrantError, StateError
+- Custom error classes: SyncError, DriveError, EmbeddingError, VectorizeError, StateError
 - withRetry() with exponential backoff
 - toError() utility for safe unknown → Error conversion
 - ErrorCollector for aggregating errors during sync
@@ -79,14 +79,15 @@
 - Incremental optimization: reuses embeddings for unchanged chunks
 - **Tests:** 24 passing (17 chunking + 7 hash)
 
-### Qdrant Integration (`src/qdrant/`)
-- Collection initialization (3072 dims, cosine, HNSW m=16 ef_construct=200)
-- Batch vector upsert with wait=true
-- Delete vectors by file_id filter
+### Vectorize Integration (`src/vectorize/`)
+- VectorizeClient implements VectorStoreClient interface
+- Batch vector upsert with automatic tracking
+- Delete vectors by file_id using KV-based index
 - Fetch existing vectors by file_id (for embedding optimization)
 - Vector ID generation/parsing with underscore handling
-- Vector payload includes chunk_hash for change detection
-- **Tests:** 19 passing
+- KV-based file-to-vector ID mapping for efficient operations
+- Vector count tracking via KV (prevents inflation on re-upserts)
+- **Tests:** 5 passing (vectorize-client.test.ts)
 
 ### Sync Orchestrator (`src/sync/`)
 - Full sync: scan all files and embed
@@ -130,10 +131,10 @@
 ```json
 {
   "core": [
-    "googleapis@144.0.0",
-    "@qdrant/js-client-rest@1.12.0",
-    "openai@4.76.1",
-    "tiktoken@1.0.18"
+    "googleapis@166.0.0",
+    "openai@6.9.0",
+    "tiktoken@1.0.18",
+    "pdfjs-dist@4.10.38"
   ],
   "dev": [
     "@cloudflare/workers-types@4.20241127.0",
@@ -234,7 +235,7 @@
 - ✅ Error Handling (src/errors/)
 - ✅ Drive Integration (src/drive/)
 - ✅ Embedding Pipeline (src/embedding/) with incremental optimization
-- ✅ Qdrant Client (src/qdrant/)
+- ✅ Vectorize Client (src/vectorize/)
 - ✅ Sync Orchestrator (src/sync/) with intelligent embedding reuse
 - ✅ Admin API (src/api/)
 - ✅ Main Entry Point (src/index.ts)
@@ -437,12 +438,73 @@
 - /admin/stats vectorCount now accurately reflects actual vector count
 - Prevents metric drift in production deployments
 
+### Session 7: 2025-11-15 08:00-08:30 - Complete Qdrant → Vectorize Migration (TASK-027) ✅
+
+**Completed Tasks:**
+- TASK-027: Complete migration from Qdrant to Cloudflare Vectorize
+
+**Key Achievements:**
+- ✅ All 227 tests passing
+- ✅ Type-check: 0 errors
+- ✅ ESLint: 0 errors, 4 warnings (same as before)
+- ✅ Zero Qdrant code remaining in codebase
+- ✅ Removed @qdrant/js-client-rest dependency (27 packages removed)
+
+**Migration Steps:**
+1. Renamed monitoring methods:
+   - `recordQdrantApiCall()` → `recordVectorIndexCall()`
+   - `recordQdrantOperation()` → `recordVectorIndexOperation()`
+   - Updated MetricsCollector, CostTracker, and all tests
+
+2. Updated sync-orchestrator.ts:
+   - Changed all metrics/cost tracking calls to use new method names
+   - No functional changes to VectorStoreClient interface usage
+
+3. Removed Qdrant support from index.ts:
+   - Eliminated fallback logic for Qdrant
+   - Now exclusively uses VectorizeClient
+   - Removed QdrantClient import
+   - Updated Env interface (removed QDRANT_URL, QDRANT_API_KEY)
+   - Changed QDRANT_COLLECTION_NAME → INDEX_NAME
+
+4. Updated all test files:
+   - sync-orchestrator.test.ts: MockQdrantClient → MockVectorClient
+   - admin-handler.test.ts: MockQdrantClient → MockVectorClient
+   - Imported VectorPoint from types/vector-store instead of qdrant/qdrant-client
+
+5. Removed Qdrant code:
+   - Deleted src/qdrant/ directory (qdrant-client.ts, qdrant-client.test.ts)
+   - Removed @qdrant/js-client-rest from package.json
+   - Updated package description and keywords
+
+6. Updated configuration:
+   - wrangler.toml: Removed deprecated QDRANT_* secrets from comments
+   - Changed QDRANT_COLLECTION_NAME → INDEX_NAME in vars section
+   - Updated alerting.ts notification messages
+
+7. Fixed remaining test failures:
+   - Fixed vectorClient references in test setup
+   - Updated error messages in test expectations
+   - Corrected bind() calls in mock setup
+
+**Technical Details:**
+- VectorizeClient already fully implements VectorStoreClient interface
+- All business logic unchanged - only monitoring/naming updates
+- Maintains same vector ID format and payload structure
+- KV-based file-vector index continues to work as before
+
+**Impact:**
+- **Simplified deployment**: No external Qdrant Cloud dependency
+- **Cost reduction**: Vectorize included with Cloudflare Workers
+- **Better integration**: Native Cloudflare platform features
+- **Cleaner codebase**: Single vector store implementation
+
 ## Project Statistics
 
-- **Total Lines of Code:** ~3400+ LOC
-- **Test Coverage:** 241 unit tests passing
+- **Total Lines of Code:** ~3400 LOC
+- **Test Coverage:** 227 unit tests passing (all green)
 - **Modules:** 8 core modules + vectorize client + monitoring + utilities
-- **Dependencies:** 5 production, 9 dev (all up-to-date, 0 vulnerabilities)
-- **Time Invested:** ~22 hours
+- **Dependencies:** 4 production, 9 dev (all up-to-date, 0 vulnerabilities)
+- **Time Invested:** ~24 hours
 - **Remaining Work:** ~9 hours (E2E tests, documentation, deployment)
-- **Cost Optimization:** 80-90% reduction in embedding API calls for updates
+- **Cost Optimization:** 80-90% reduction in embedding API calls for updates + eliminated Qdrant Cloud costs
