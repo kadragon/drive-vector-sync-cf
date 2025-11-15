@@ -2,6 +2,79 @@
 # Tasks are moved here when completed
 
 completed_tasks:
+  - task_id: TASK-015
+    spec_id: null
+    title: "Create deployment documentation"
+    completed_at: "2025-11-15T14:30:00Z"
+    duration: "2 hours"
+    outcome: "Comprehensive deployment guide with step-by-step setup instructions"
+    tests_passed: []
+    notes: |
+      Enhanced README.md with production-ready deployment documentation.
+
+      Documentation Coverage:
+      - Google Service Account Setup (4 subsections):
+        * Step-by-step Service Account creation in Google Cloud Console
+        * JSON key download and format explanation
+        * Drive folder sharing with Service Account email
+        * Folder ID extraction from Drive URL
+
+      - Cloudflare Infrastructure Setup (2 subsections):
+        * Vectorize index creation with wrangler CLI
+        * KV namespace creation and wrangler.toml configuration
+
+      - Secrets Configuration (7 subsections):
+        * GOOGLE_SERVICE_ACCOUNT_JSON (with cat pipe example)
+        * GOOGLE_ROOT_FOLDER_ID
+        * OPENAI_API_KEY
+        * ADMIN_TOKEN (with openssl generation)
+        * Optional: GOOGLE_IMPERSONATION_EMAIL
+        * Optional: Webhook configuration (WEBHOOK_URL, WEBHOOK_TYPE, PERFORMANCE_THRESHOLD)
+        * Secret verification commands
+
+      - Deployment Process (3 steps):
+        * Deploy command and expected output
+        * Health check verification
+        * First sync trigger and log monitoring
+
+      - API Reference:
+        * Complete endpoint documentation (health, status, stats, resync)
+        * Request/response examples in JSON
+        * Bash and JavaScript usage examples
+        * Error response documentation (401, 409)
+
+      - Monitoring and Alerting:
+        * Slack webhook setup guide
+        * Discord webhook setup guide
+        * Performance threshold configuration
+        * Cloudflare Dashboard metrics overview
+        * Log streaming with wrangler tail
+        * Cost tracking summary format
+
+      - Troubleshooting Guide (7 common issues):
+        1. Service Account authentication failures
+        2. Vectorize index not found
+        3. KV namespace binding errors
+        4. OpenAI rate limits
+        5. Worker timeouts and performance tuning
+        6. Drive folder access issues
+        7. Admin API authentication errors
+
+      - Development Workflow:
+        * Local development with .dev.vars
+        * Testing commands and watch mode
+        * Type checking and linting
+
+      Key Improvements:
+      - Removed outdated OAuth2 references (replaced with Service Account)
+      - Removed Qdrant references (replaced with Vectorize)
+      - Added concrete examples for every configuration step
+      - Included expected output for verification
+      - Added security best practices (token generation, secret handling)
+      - Provided troubleshooting solutions with commands
+
+      Total additions: ~500 lines of production-ready documentation
+
   - task_id: TASK-014
     spec_id: null
     title: "Write E2E integration tests"

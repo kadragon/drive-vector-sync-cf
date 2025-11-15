@@ -6,10 +6,10 @@ tasks:
     spec_id: null
     title: "Production deployment"
     priority: 1
-    status: pending
+    status: ready
     dependencies:
-      - TASK-014
-      - TASK-015
+      - TASK-014 ✅
+      - TASK-015 ✅
     estimated_effort: 3 hours
     description: |
       Deploy to Cloudflare Workers production.
@@ -19,20 +19,6 @@ tasks:
       Test with real Google Drive folder.
       Monitor first sync execution.
     test_refs: []
-
-  - task_id: TASK-015
-    spec_id: null
-    title: "Create deployment documentation"
-    priority: 2
-    status: pending
-    dependencies:
-      - TASK-014
-    estimated_effort: 2 hours
-    description: |
-      Document setup instructions.
-      Document secrets configuration (wrangler secret put).
-      Document KV namespace setup.
-      Document manual resync procedures.
-      Create troubleshooting guide.
-      Add monitoring and alerting setup guide.
-    test_refs: []
+    notes: |
+      All dependencies completed. Ready for production deployment.
+      Documentation is complete and verified.
