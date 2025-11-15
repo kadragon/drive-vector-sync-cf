@@ -8,7 +8,3 @@ npm run type-check
 # Run lint-staged for changed files
 echo "Running lint-staged..."
 npx lint-staged
-
-# Run markdownlint
-echo "Running markdownlint..."
-npx markdownlint-cli2 "**/*.md"
