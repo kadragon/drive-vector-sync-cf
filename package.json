@@ -4,6 +4,9 @@
   "description": "Google Drive to Cloudflare Vectorize Sync System on Cloudflare Workers",
   "main": "src/index.ts",
   "type": "module",
+  "workspaces": [
+    "frontend"
+  ],
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
@@ -14,9 +17,10 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint src --ext .ts",
     "prepare": "husky",
-    "frontend:dev": "cd frontend && npm run dev",
-    "frontend:build": "cd frontend && npm run build",
-    "frontend:install": "cd frontend && npm install"
+    "frontend:dev": "npm -w frontend run dev",
+    "frontend:build": "npm -w frontend run build",
+    "frontend:preview": "npm -w frontend run preview",
+    "frontend:lint": "npm -w frontend run lint"
   },
   "keywords": [
     "cloudflare-workers",

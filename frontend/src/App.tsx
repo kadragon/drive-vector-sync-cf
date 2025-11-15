@@ -4,22 +4,31 @@ function App() {
   const [healthStatus, setHealthStatus] = useState<string>('Checking...')
 
   useEffect(() => {
-    // Test API connectivity
-    fetch('/health')
-      .then(res => res.json())
-      .then(data => {
-        setHealthStatus(`Worker Status: ${data.status}`)
-      })
-      .catch(err => {
-        setHealthStatus(`Error: ${err.message}`)
-      })
+    const checkHealth = async () => {
+      try {
+        const res = await fetch('/health');
+        if (!res.ok) {
+          throw new Error(`Worker responded with status ${res.status}`);
+        }
+        const data = await res.json();
+        setHealthStatus(`Worker Status: ${data.status}`);
+      } catch (err) {
+        if (err instanceof Error) {
+          setHealthStatus(`Error: ${err.message}`);
+        } else {
+          setHealthStatus('An unknown error occurred');
+        }
+      }
+    };
+
+    checkHealth();
   }, [])
 
   return (
     <div className="min-h-screen bg-base-200">
       <div className="navbar bg-base-100 shadow-lg">
         <div className="flex-1">
-          <a className="btn btn-ghost text-xl">Drive Vector Sync Dashboard</a>
+          <a href="/" className="btn btn-ghost text-xl">Drive Vector Sync Dashboard</a>
         </div>
         <div className="flex-none">
           <label className="swap swap-rotate btn btn-ghost btn-circle">
