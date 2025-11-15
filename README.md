@@ -414,6 +414,10 @@ POST /admin/resync
 
 Clears sync state and re-processes all files in the Drive folder.
 
+> **⚠️ Warning: Potential Timeouts**
+>
+> This endpoint performs a synchronous resync and may time out on large datasets due to Cloudflare Worker execution limits (30 seconds for HTTP requests on paid plans). For production environments with many files, it is recommended to rely on the automatic daily cron trigger. This endpoint is best used for small datasets or for development and testing where timeouts are not a concern.
+
 **Response 200:**
 ```json
 {
@@ -728,7 +732,12 @@ wrangler tail --status error
   ```
 - Regenerate token if necessary:
   ```bash
-  openssl rand -hex 32 | wrangler secret put ADMIN_TOKEN
+  # 1. Generate a new secure token and copy it
+  openssl rand -hex 32
+
+  # 2. Update the secret with the new token
+  # Paste the token when prompted
+  wrangler secret put ADMIN_TOKEN
   ```
 
 ### Debug Mode
