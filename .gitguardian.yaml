@@ -1,0 +1,10 @@
+# GitGuardian configuration
+# https://docs.gitguardian.com/internal-repositories-monitoring/integrations/git_hooks/pre_commit#exclude-files-and-paths
+
+# Ignore test files that contain mock credentials and dummy keys
+paths-ignore:
+  - "**/*.test.ts"
+  - "**/*.e2e.test.ts"
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/__tests__/**"
