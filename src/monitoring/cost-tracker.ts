@@ -28,7 +28,7 @@ export interface CostMetrics {
     totalQueries: number;
     queriesLast100Sec: number;
   };
-  qdrant: {
+  vectorIndex: {
     totalOperations: number;
   };
 }
@@ -51,7 +51,7 @@ export class CostTracker {
         totalQueries: 0,
         queriesLast100Sec: 0,
       },
-      qdrant: {
+      vectorIndex: {
         totalOperations: 0,
       },
     };
@@ -71,7 +71,7 @@ export class CostTracker {
         totalQueries: 0,
         queriesLast100Sec: 0,
       },
-      qdrant: {
+      vectorIndex: {
         totalOperations: 0,
       },
     };
@@ -103,10 +103,10 @@ export class CostTracker {
   }
 
   /**
-   * Record Qdrant operation
+   * Record vector index operation
    */
-  recordQdrantOperation(): void {
-    this.metrics.qdrant.totalOperations++;
+  recordVectorIndexOperation(): void {
+    this.metrics.vectorIndex.totalOperations++;
   }
 
   /**
@@ -145,7 +145,7 @@ export class CostTracker {
     return [
       `OpenAI: ${this.metrics.openai.totalTokens.toLocaleString()} tokens, $${this.metrics.openai.totalCost.toFixed(4)}`,
       `Drive: ${this.metrics.drive.totalQueries} queries (${this.metrics.drive.queriesLast100Sec} in last 100s)`,
-      `Qdrant: ${this.metrics.qdrant.totalOperations} operations`,
+      `Vectorize: ${this.metrics.vectorIndex.totalOperations} operations`,
     ].join(' | ');
   }
 
@@ -155,7 +155,7 @@ export class CostTracker {
   getCostBreakdown(): {
     openai: { tokens: number; cost: number; calls: number };
     drive: { queries: number; queriesLast100Sec: number };
-    qdrant: { operations: number };
+    vectorIndex: { operations: number };
     total: { openaiCost: number };
   } {
     return {
@@ -168,11 +168,11 @@ export class CostTracker {
         queries: this.metrics.drive.totalQueries,
         queriesLast100Sec: this.metrics.drive.queriesLast100Sec,
       },
-      qdrant: {
-        operations: this.metrics.qdrant.totalOperations,
+      vectorIndex: {
+        operations: this.metrics.vectorIndex.totalOperations,
       },
       total: {
-        // Note: Currently only tracks OpenAI costs (Drive and Qdrant are usage-based)
+        // Note: Currently only tracks OpenAI costs (Drive and Vectorize are usage-based)
         openaiCost: this.metrics.openai.totalCost,
       },
     };

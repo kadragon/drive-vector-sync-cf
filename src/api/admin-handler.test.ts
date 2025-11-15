@@ -10,7 +10,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AdminHandler, validateAdminToken } from './admin-handler';
 import { SyncOrchestrator, SyncResult } from '../sync/sync-orchestrator';
 import { KVStateManager, SyncState } from '../state/kv-state-manager';
-import { QdrantClient } from '../qdrant/qdrant-client';
+import { VectorStoreClient } from '../types/vector-store';
 
 // Define response types for better type safety
 interface AdminStatusResponse {
@@ -109,7 +109,7 @@ class MockKVStateManager {
   }
 }
 
-class MockQdrantClient {
+class MockVectorClient {
   private collectionInfo = {
     name: 'project_docs',
     status: 'green',
@@ -137,18 +137,18 @@ describe('AdminHandler', () => {
   let handler: AdminHandler;
   let orchestrator: MockSyncOrchestrator;
   let stateManager: MockKVStateManager;
-  let qdrantClient: MockQdrantClient;
+  let vectorClient: MockVectorClient;
   const rootFolderId = 'root-folder-123';
 
   beforeEach(() => {
     orchestrator = new MockSyncOrchestrator();
     stateManager = new MockKVStateManager();
-    qdrantClient = new MockQdrantClient();
+    vectorClient = new MockVectorClient();
 
     handler = new AdminHandler(
       orchestrator as unknown as SyncOrchestrator,
       stateManager as unknown as KVStateManager,
-      qdrantClient as unknown as QdrantClient,
+      vectorClient as unknown as VectorStoreClient,
       rootFolderId
     );
   });
@@ -383,11 +383,11 @@ describe('AdminHandler', () => {
 
   describe('GET /admin/stats', () => {
     it('should return collection name and vector count', async () => {
-      qdrantClient.setCollectionInfo({
+      vectorClient.setCollectionInfo({
         name: 'custom_collection',
         status: 'green',
       });
-      qdrantClient.setVectorCount(1000);
+      vectorClient.setVectorCount(1000);
 
       const request = new Request('http://localhost/admin/stats', {
         method: 'GET',
@@ -402,7 +402,7 @@ describe('AdminHandler', () => {
     });
 
     it('should return collection status', async () => {
-      qdrantClient.setCollectionInfo({
+      vectorClient.setCollectionInfo({
         name: 'project_docs',
         status: 'yellow',
       });
@@ -418,7 +418,7 @@ describe('AdminHandler', () => {
     });
 
     it('should handle empty collection', async () => {
-      qdrantClient.setVectorCount(0);
+      vectorClient.setVectorCount(0);
 
       const request = new Request('http://localhost/admin/stats', {
         method: 'GET',
@@ -460,8 +460,8 @@ describe('AdminHandler', () => {
       expect(response.status).toBe(500);
     });
 
-    it('should handle qdrant client failures', async () => {
-      qdrantClient.getCollectionInfo = vi.fn().mockRejectedValue(new Error('Qdrant error'));
+    it('should handle vector client failures', async () => {
+      vectorClient.getCollectionInfo = vi.fn().mockRejectedValue(new Error('Vector index error'));
 
       const request = new Request('http://localhost/admin/stats', {
         method: 'GET',
@@ -471,7 +471,7 @@ describe('AdminHandler', () => {
       const data = (await response.json()) as AdminErrorResponse;
 
       expect(response.status).toBe(500);
-      expect(data.message).toContain('Qdrant error');
+      expect(data.message).toContain('Vector index error');
     });
 
     it('should handle orchestrator failures during resync', async () => {

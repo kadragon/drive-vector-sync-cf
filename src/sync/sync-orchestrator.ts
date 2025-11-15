@@ -71,8 +71,8 @@ export class SyncOrchestrator {
 
     try {
       // 1. Initialize vector store collection
-      this.metricsCollector.recordQdrantApiCall();
-      this.costTracker.recordQdrantOperation();
+      this.metricsCollector.recordVectorIndexCall();
+      this.costTracker.recordVectorIndexOperation();
       await this.vectorClient.initializeCollection();
 
       // 2. List all markdown files
@@ -213,8 +213,8 @@ export class SyncOrchestrator {
       for (const change of changes) {
         try {
           if (change.type === 'deleted') {
-            this.metricsCollector.recordQdrantApiCall();
-            this.costTracker.recordQdrantOperation();
+            this.metricsCollector.recordVectorIndexCall();
+            this.costTracker.recordVectorIndexOperation();
             await this.vectorClient.deleteVectorsByFileId(change.fileId);
             this.metricsCollector.recordFileProcessed('deleted');
             this.metricsCollector.recordVectorsDeleted(1);
@@ -317,8 +317,8 @@ export class SyncOrchestrator {
     // 4. Fetch existing vectors for this file (for incremental optimization)
     let existingVectors: VectorPoint[] = [];
     try {
-      this.metricsCollector.recordQdrantApiCall();
-      this.costTracker.recordQdrantOperation();
+      this.metricsCollector.recordVectorIndexCall();
+      this.costTracker.recordVectorIndexOperation();
       existingVectors = await this.vectorClient.getVectorsByFileId(file.id);
       console.log(`Found ${existingVectors.length} existing vectors for file`);
     } catch (error) {
@@ -422,15 +422,15 @@ export class SyncOrchestrator {
 
     if (vectorsToDelete.length > 0) {
       const idsToDelete = vectorsToDelete.map(v => v.id);
-      this.metricsCollector.recordQdrantApiCall();
-      this.costTracker.recordQdrantOperation();
+      this.metricsCollector.recordVectorIndexCall();
+      this.costTracker.recordVectorIndexOperation();
       await this.vectorClient.deleteVectorsByIds(idsToDelete);
     }
 
     // 9. Upsert all vectors (both reused and newly embedded)
     if (vectorsToUpsert.length > 0) {
-      this.metricsCollector.recordQdrantApiCall();
-      this.costTracker.recordQdrantOperation();
+      this.metricsCollector.recordVectorIndexCall();
+      this.costTracker.recordVectorIndexOperation();
       await this.vectorClient.upsertVectors(vectorsToUpsert);
       console.log(`Upserted ${vectorsToUpsert.length} vectors for file: ${file.name}`);
     }

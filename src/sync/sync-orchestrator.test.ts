@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SyncOrchestrator, SyncConfig } from './sync-orchestrator';
 import { DriveFileMetadata, DriveChange } from '../drive/drive-client';
-import { VectorPoint } from '../qdrant/qdrant-client';
+import { VectorPoint } from '../types/vector-store';
 import { SyncState } from '../state/kv-state-manager';
 
 // Mock implementations
@@ -71,7 +71,7 @@ class MockEmbeddingClient {
   }
 }
 
-class MockQdrantClient {
+class MockVectorClient {
   private vectors = new Map<string, VectorPoint[]>();
 
   setVectors(fileId: string, vectors: VectorPoint[]) {
@@ -163,14 +163,14 @@ describe('SyncOrchestrator', () => {
   let orchestrator: SyncOrchestrator;
   let driveClient: MockDriveClient;
   let embeddingClient: MockEmbeddingClient;
-  let qdrantClient: MockQdrantClient;
+  let vectorClient: MockVectorClient;
   let stateManager: MockKVStateManager;
   let config: SyncConfig;
 
   beforeEach(() => {
     driveClient = new MockDriveClient();
     embeddingClient = new MockEmbeddingClient();
-    qdrantClient = new MockQdrantClient();
+    vectorClient = new MockVectorClient();
     stateManager = new MockKVStateManager();
     config = {
       chunkSize: 2000,
@@ -181,7 +181,7 @@ describe('SyncOrchestrator', () => {
     orchestrator = new SyncOrchestrator(
       driveClient as any,
       embeddingClient as any,
-      qdrantClient as any,
+      vectorClient as any,
       stateManager as any,
       config
     );
@@ -471,7 +471,7 @@ describe('SyncOrchestrator', () => {
         },
       ];
 
-      qdrantClient.setVectors('file1', existingVectors);
+      vectorClient.setVectors('file1', existingVectors);
 
       // Note: This test relies on hash computation - the actual behavior
       // depends on whether chunk content produces the same hash
@@ -493,7 +493,7 @@ describe('SyncOrchestrator', () => {
       };
 
       driveClient.setFileContent('new-file', 'Brand new content');
-      qdrantClient.clearVectors();
+      vectorClient.clearVectors();
 
       const files = [file];
       driveClient.setFiles(files);
@@ -516,8 +516,8 @@ describe('SyncOrchestrator', () => {
       driveClient.setFileContent('file1', 'Test content');
 
       // Mock getVectorsByFileId to throw collection not found error
-      const originalGetVectors = qdrantClient.getVectorsByFileId.bind(qdrantClient);
-      qdrantClient.getVectorsByFileId = vi
+      const originalGetVectors = vectorClient.getVectorsByFileId.bind(vectorClient);
+      vectorClient.getVectorsByFileId = vi
         .fn()
         .mockRejectedValue(new Error('collection not found'));
 
@@ -530,7 +530,7 @@ describe('SyncOrchestrator', () => {
       expect(result.errors).toBe(0); // Should not count as error
 
       // Restore
-      qdrantClient.getVectorsByFileId = originalGetVectors;
+      vectorClient.getVectorsByFileId = originalGetVectors;
     });
 
     it('should delete vectors for removed chunks when file shrinks', async () => {
@@ -588,7 +588,7 @@ describe('SyncOrchestrator', () => {
         },
       ];
 
-      qdrantClient.setVectors('file1', existingVectors);
+      vectorClient.setVectors('file1', existingVectors);
 
       const files = [file];
       driveClient.setFiles(files);

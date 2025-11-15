@@ -24,7 +24,7 @@ describe('CostTracker', () => {
       expect(metrics.openai.embeddingCalls).toBe(0);
       expect(metrics.drive.totalQueries).toBe(0);
       expect(metrics.drive.queriesLast100Sec).toBe(0);
-      expect(metrics.qdrant.totalOperations).toBe(0);
+      expect(metrics.vectorIndex.totalOperations).toBe(0);
     });
   });
 
@@ -82,13 +82,13 @@ describe('CostTracker', () => {
     });
   });
 
-  describe('Qdrant tracking', () => {
-    it('should record Qdrant operations', () => {
-      tracker.recordQdrantOperation();
-      tracker.recordQdrantOperation();
+  describe('Vector index tracking', () => {
+    it('should record vector index operations', () => {
+      tracker.recordVectorIndexOperation();
+      tracker.recordVectorIndexOperation();
 
       const metrics = tracker.getMetrics();
-      expect(metrics.qdrant.totalOperations).toBe(2);
+      expect(metrics.vectorIndex.totalOperations).toBe(2);
     });
   });
 
@@ -96,7 +96,7 @@ describe('CostTracker', () => {
     it('should reset all metrics', () => {
       tracker.recordEmbeddingUsage(1000);
       tracker.recordDriveQuery();
-      tracker.recordQdrantOperation();
+      tracker.recordVectorIndexOperation();
 
       tracker.reset();
 
@@ -104,7 +104,7 @@ describe('CostTracker', () => {
       expect(metrics.openai.totalTokens).toBe(0);
       expect(metrics.openai.totalCost).toBe(0);
       expect(metrics.drive.totalQueries).toBe(0);
-      expect(metrics.qdrant.totalOperations).toBe(0);
+      expect(metrics.vectorIndex.totalOperations).toBe(0);
     });
   });
 
@@ -112,7 +112,7 @@ describe('CostTracker', () => {
     it('should generate summary string', () => {
       tracker.recordEmbeddingUsage(10000);
       tracker.recordDriveQuery();
-      tracker.recordQdrantOperation();
+      tracker.recordVectorIndexOperation();
 
       const summary = tracker.getSummary();
 
@@ -127,7 +127,7 @@ describe('CostTracker', () => {
     it('should provide detailed cost breakdown', () => {
       tracker.recordEmbeddingUsage(5000);
       tracker.recordDriveQuery();
-      tracker.recordQdrantOperation();
+      tracker.recordVectorIndexOperation();
 
       const breakdown = tracker.getCostBreakdown();
 
@@ -135,7 +135,7 @@ describe('CostTracker', () => {
       expect(breakdown.openai.calls).toBe(1);
       expect(breakdown.openai.cost).toBeCloseTo(0.00065, 6);
       expect(breakdown.drive.queries).toBe(1);
-      expect(breakdown.qdrant.operations).toBe(1);
+      expect(breakdown.vectorIndex.operations).toBe(1);
       expect(breakdown.total.openaiCost).toBeCloseTo(0.00065, 6);
     });
   });

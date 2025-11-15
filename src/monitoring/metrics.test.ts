@@ -28,7 +28,7 @@ describe('MetricsCollector', () => {
       expect(metrics.chunksProcessed).toBe(0);
       expect(metrics.embeddingApiCalls).toBe(0);
       expect(metrics.driveApiCalls).toBe(0);
-      expect(metrics.qdrantApiCalls).toBe(0);
+      expect(metrics.vectorIndexCalls).toBe(0);
       expect(metrics.errors).toHaveLength(0);
       expect(metrics.success).toBe(false);
       expect(metrics.startTime).toBeGreaterThan(0);
@@ -132,10 +132,10 @@ describe('MetricsCollector', () => {
     });
 
     it('should record Qdrant API calls', () => {
-      collector.recordQdrantApiCall();
+      collector.recordVectorIndexCall();
 
       const metrics = collector.getMetrics();
-      expect(metrics.qdrantApiCalls).toBe(1);
+      expect(metrics.vectorIndexCalls).toBe(1);
     });
   });
 
@@ -221,7 +221,7 @@ describe('MetricsCollector', () => {
       collector.recordChunksProcessed(10);
       collector.recordEmbeddingApiCall();
       collector.recordDriveApiCall();
-      collector.recordQdrantApiCall();
+      collector.recordVectorIndexCall();
       collector.end(true);
 
       const summary = collector.getSummary();

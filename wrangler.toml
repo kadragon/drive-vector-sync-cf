@@ -1,17 +1,17 @@
-name = "drive-vector-sync"
+name = "worknote-maker-cf"
 main = "src/index.ts"
 compatibility_date = "2024-11-13"
 compatibility_flags = ["nodejs_compat"]
 
 # KV Namespace for state persistence
 [[kv_namespaces]]
-binding = "SYNC_STATE"
+binding = "WORKNOTE_SYNC_STATE"
 id = "PLACEHOLDER_KV_ID"
 preview_id = "PLACEHOLDER_PREVIEW_KV_ID"
 
 # KV Namespace for file-to-vector ID mapping (Vectorize migration)
 [[kv_namespaces]]
-binding = "FILE_VECTOR_INDEX"
+binding = "WORKNOTE_FILE_VECTOR_INDEX"
 id = "PLACEHOLDER_FILE_INDEX_ID"
 preview_id = "PLACEHOLDER_FILE_INDEX_PREVIEW_ID"
 
@@ -36,18 +36,14 @@ crons = ["0 17 * * *"]
 # - WEBHOOK_URL (for Slack/Discord alerts)
 # - WEBHOOK_TYPE (slack or discord)
 # - PERFORMANCE_THRESHOLD (files/sec, default: 0.5)
-#
-# Deprecated (will be removed after Vectorize migration):
-# - QDRANT_URL
-# - QDRANT_API_KEY
 
 # Node.js compatibility for googleapis and other packages
 node_compat = true
 
 # Environment variables (non-sensitive)
 [vars]
-CHUNK_SIZE = "2000"
+CHUNK_SIZE = "1000"
 MAX_BATCH_SIZE = "32"
 MAX_CONCURRENCY = "4"
 MAX_RETRIES = "3"
-QDRANT_COLLECTION_NAME = "project_docs"
+INDEX_NAME = "worknote-store"

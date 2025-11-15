@@ -18,7 +18,7 @@ export interface SyncMetrics {
   chunksProcessed: number;
   embeddingApiCalls: number;
   driveApiCalls: number;
-  qdrantApiCalls: number;
+  vectorIndexCalls: number;
   errors: ErrorMetric[];
   success: boolean;
 }
@@ -61,7 +61,7 @@ export class MetricsCollector {
       chunksProcessed: 0,
       embeddingApiCalls: 0,
       driveApiCalls: 0,
-      qdrantApiCalls: 0,
+      vectorIndexCalls: 0,
       errors: [],
       success: false,
     };
@@ -126,8 +126,8 @@ export class MetricsCollector {
     this.metrics.driveApiCalls++;
   }
 
-  recordQdrantApiCall(): void {
-    this.metrics.qdrantApiCalls++;
+  recordVectorIndexCall(): void {
+    this.metrics.vectorIndexCalls++;
   }
 
   /**
@@ -180,7 +180,7 @@ export class MetricsCollector {
       `Files: ${this.metrics.filesProcessed} (${this.metrics.filesAdded} added, ${this.metrics.filesModified} modified, ${this.metrics.filesDeleted} deleted)`,
       `Vectors: ${this.metrics.vectorsUpserted} upserted, ${this.metrics.vectorsDeleted} deleted`,
       `Chunks: ${this.metrics.chunksProcessed}`,
-      `API calls: ${this.metrics.embeddingApiCalls} embedding, ${this.metrics.driveApiCalls} drive, ${this.metrics.qdrantApiCalls} qdrant`,
+      `API calls: ${this.metrics.embeddingApiCalls} embedding, ${this.metrics.driveApiCalls} drive, ${this.metrics.vectorIndexCalls} vectorize`,
       `Performance: ${perf.filesPerSecond.toFixed(2)} files/s, ${perf.chunksPerSecond.toFixed(2)} chunks/s`,
       `Errors: ${this.metrics.errors.length}`,
     ].join(' | ');
