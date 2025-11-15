@@ -21,8 +21,8 @@ import type { VectorizeIndex } from './types/vectorize.js';
 
 export interface Env {
   // Cloudflare Workers bindings
-  SYNC_STATE: KVNamespace;
-  FILE_VECTOR_INDEX: KVNamespace;
+  WORKNOTE_SYNC_STATE: KVNamespace;
+  WORKNOTE_FILE_VECTOR_INDEX: KVNamespace;
   VECTORIZE: VectorizeIndex;
 
   // Secrets
@@ -68,11 +68,11 @@ function initializeServices(env: Env) {
   console.log('Using Cloudflare Vectorize for vector storage');
   const vectorClient = new VectorizeClient({
     index: env.VECTORIZE as VectorizeIndex,
-    fileIndex: env.FILE_VECTOR_INDEX,
+    fileIndex: env.WORKNOTE_FILE_VECTOR_INDEX,
     collectionName: env.INDEX_NAME,
   });
 
-  const stateManager = new KVStateManager(env.SYNC_STATE);
+  const stateManager = new KVStateManager(env.WORKNOTE_SYNC_STATE);
 
   const orchestrator = new SyncOrchestrator(
     driveClient,
