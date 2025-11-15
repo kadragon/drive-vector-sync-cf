@@ -166,6 +166,8 @@ function createMockEnv(): Env {
       type: 'service_account',
       project_id: 'test-project',
       private_key_id: 'test-key-id',
+      // SECURITY: Mock private key for testing only - NOT a real credential
+      // This is a non-functional dummy key used solely for testing the JSON structure
       private_key:
         '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7W8jT3wEqKm0X\ntest-mock-key-data-for-testing-only\n-----END PRIVATE KEY-----\n',
       client_email: 'test@example.iam.gserviceaccount.com',
@@ -562,7 +564,7 @@ describe('E2E Integration Tests', () => {
     it('should handle health check while sync is running', async () => {
       // Acquire lock to simulate running sync
       const stateKV = env.WORKNOTE_SYNC_STATE;
-      await stateKV.put('sync_lock', JSON.stringify({ locked: true, timestamp: Date.now() }));
+      await stateKV.put('sync_lock', Date.now().toString());
 
       // Health check should still work
       const request = new Request('http://localhost/health');
