@@ -1,20 +1,20 @@
 // API response types for the Drive Vector Sync Worker
 
 export interface SyncStatus {
+  status: 'ok';
   lastSyncTime: string | null;
   filesProcessed: number;
   errorCount: number;
+  hasStartPageToken: boolean;
   isLocked: boolean;
   nextScheduledSync: string | null;
   lastSyncDuration: number | null;
 }
 
 export interface SyncStats {
+  collection?: string;
   vectorCount: number;
-  collectionInfo: {
-    name: string;
-    dimensions: number;
-  };
+  status?: string;
 }
 
 export interface SyncHistoryEntry {
@@ -28,7 +28,6 @@ export interface SyncHistoryEntry {
 
 export interface HealthCheck {
   status: 'ok';
-  timestamp: string;
 }
 
 export interface ErrorResponse {
