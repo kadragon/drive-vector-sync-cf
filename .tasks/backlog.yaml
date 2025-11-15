@@ -2,21 +2,6 @@
 # Remaining pending tasks sorted by priority
 
 tasks:
-  - task_id: TASK-014
-    spec_id: null
-    title: "Write E2E integration tests"
-    priority: 1
-    status: pending
-    dependencies: []
-    estimated_effort: 4 hours
-    description: |
-      Create end-to-end integration tests.
-      Mock external APIs (Drive, OpenAI, Qdrant).
-      Test complete sync pipeline with real-world scenarios.
-      Verify error handling in full flow.
-    test_refs: []
-    notes: "Unit tests completed (66 tests). E2E tests with mocked services needed."
-
   - task_id: TASK-021
     spec_id: null
     title: "Production deployment"
@@ -30,7 +15,7 @@ tasks:
       Deploy to Cloudflare Workers production.
       Configure all secrets via wrangler.
       Create KV namespace in production.
-      Set up Qdrant collection in production.
+      Bind Vectorize index in production.
       Test with real Google Drive folder.
       Monitor first sync execution.
     test_refs: []

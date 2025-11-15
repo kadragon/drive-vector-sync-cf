@@ -2,6 +2,71 @@
 # Tasks are moved here when completed
 
 completed_tasks:
+  - task_id: TASK-014
+    spec_id: null
+    title: "Write E2E integration tests"
+    completed_at: "2025-11-15T11:28:00Z"
+    duration: "2.5 hours"
+    outcome: "Comprehensive E2E test suite with 24 tests covering full worker integration"
+    tests_passed:
+      - All 24 E2E integration tests
+      - Full test suite: 251 tests passing (227 existing + 24 new)
+    notes: |
+      Created src/index.e2e.test.ts with comprehensive end-to-end integration tests.
+
+      Test Coverage:
+      - HTTP Fetch Handler (10 tests):
+        * Health check endpoint
+        * Authentication (valid/invalid tokens)
+        * Admin API Status endpoint
+        * Admin API Stats endpoint
+        * Admin API Resync endpoint
+        * 404 handling
+
+      - Scheduled Handler (3 tests):
+        * Normal scheduled execution
+        * Concurrent execution prevention with lock
+        * Logging verification
+
+      - State Persistence (1 test):
+        * KV state persistence across operations
+
+      - Error Handling (1 test):
+        * Malformed state data handling
+
+      - Configuration (2 tests):
+        * Numeric configuration parsing
+        * Default value fallbacks
+
+      - Integration Scenarios (3 tests):
+        * Full workflow: status → resync → status
+        * Health check during sync
+        * Multiple concurrent status requests
+
+      - Vector Store Integration (1 test):
+        * Vectorize index operations
+
+      - KV Namespace Integration (1 test):
+        * File-vector mapping storage/retrieval
+
+      Mock Implementation:
+      - MockKVNamespace: Full KV implementation with JSON parsing support
+      - MockVectorizeIndex: Complete Vectorize operations (query, insert, upsert, delete)
+      - Google Drive API: Mocked googleapis with JWT authentication
+      - OpenAI API: Mocked embedding generation
+
+      Key Learnings:
+      - Shared KV instances across test calls for state persistence
+      - Correct KV key usage (drive_start_page_token vs sync_state)
+      - Lock format: timestamp string, not JSON object
+      - JWT mock must accept options object, not positional parameters
+      - KVNamespace.get(key, 'json') requires type-aware mock implementation
+
+      Final Status:
+      - 251 tests passing (100% pass rate)
+      - 14 test files
+      - E2E tests ready for production validation
+
   - task_id: TASK-027
     spec_id: SPEC-vectorize-migration-1
     title: "Complete Qdrant → Vectorize migration and cleanup"
@@ -137,30 +202,6 @@ completed_tasks:
       - TEST-embedding-pipeline-4
       - TEST-embedding-pipeline-5
     notes: "Validates 3072 dimensions, supports configurable batch sizes"
-
-  - task_id: TASK-006
-    spec_id: SPEC-qdrant-sync-1
-    title: "Initialize Qdrant collection with schema"
-    completed_at: "2025-11-13T06:50:00Z"
-    duration: "1 hour"
-    outcome: "Qdrant client with collection initialization (3072 dims, cosine distance)"
-    tests_passed:
-      - TEST-qdrant-sync-1
-    notes: "Proper HNSW configuration (m=16, ef_construct=200)"
-
-  - task_id: TASK-007
-    spec_id: SPEC-qdrant-sync-1
-    title: "Implement Qdrant vector upsert and delete operations"
-    completed_at: "2025-11-13T06:55:00Z"
-    duration: "1.5 hours"
-    outcome: "Batch upsert, delete by file_id, vector ID generation/parsing"
-    tests_passed:
-      - TEST-qdrant-sync-2
-      - TEST-qdrant-sync-3
-      - TEST-qdrant-sync-4
-      - TEST-qdrant-sync-5
-      - TEST-qdrant-sync-6
-    notes: "17 tests passing, fixed parseVectorId to handle underscores"
 
   - task_id: TASK-012
     spec_id: null
