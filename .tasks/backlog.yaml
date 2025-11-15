@@ -23,52 +23,6 @@ tasks:
       All dependencies completed. Ready for production deployment.
       Documentation is complete and verified.
 
-  - task_id: TASK-028
-    spec_id: SPEC-web-dashboard-1
-    title: "Enhanced admin API endpoints for dashboard"
-    priority: 2
-    status: pending
-    dependencies: []
-    estimated_effort: 2 hours
-    description: |
-      Extend /admin/status endpoint with new fields:
-      - isLocked: boolean (sync in progress indicator)
-      - nextScheduledSync: ISO timestamp (next cron execution)
-      - lastSyncDuration: number (milliseconds)
-
-      Create new /admin/history endpoint:
-      - Returns last N sync results for charting
-      - Stores sync history in KV with timestamp
-      - Response includes: timestamp, filesProcessed, vectorsUpserted,
-        vectorsDeleted, duration, errors
-    test_refs:
-      - TEST-web-dashboard-1
-    notes: |
-      Backend API changes needed before frontend implementation.
-      History data stored in KV with rolling window (last 30 entries).
-
-  - task_id: TASK-029
-    spec_id: SPEC-web-dashboard-1
-    title: "Vite + React frontend setup with DaisyUI and Recharts"
-    priority: 2
-    status: pending
-    dependencies:
-      - TASK-028
-    estimated_effort: 3 hours
-    description: |
-      Set up frontend project structure:
-      - Initialize Vite with React + TypeScript template
-      - Install and configure Tailwind CSS + DaisyUI
-      - Install Recharts for data visualization
-      - Create project structure (components/, hooks/, types/, utils/)
-      - Configure build output for Worker embedding
-      - Set up development environment with proxy to Worker API
-    test_refs: []
-    notes: |
-      Frontend code in new /frontend directory.
-      Vite dev server proxies /admin/* to Worker during development.
-      Build output in /frontend/dist ready for Worker import.
-
   - task_id: TASK-030
     spec_id: SPEC-web-dashboard-1
     title: "Implement dashboard UI components"
@@ -200,3 +154,54 @@ tasks:
     notes: |
       Ensure all acceptance tests from spec pass.
       Consider adding Playwright for E2E if needed.
+
+  - task_id: TASK-033
+    spec_id: null
+    title: "Refactor folder structure: rename src/ to worker/"
+    priority: 3
+    status: pending
+    dependencies:
+      - TASK-032
+    estimated_effort: 1.5 hours
+    description: |
+      Refactor project folder structure for clarity:
+
+      Current structure:
+        drive-vector-sync-cf/
+        ├── src/              # Worker backend (ambiguous name)
+        ├── frontend/         # React app
+        └── package.json
+
+      Target structure:
+        drive-vector-sync-cf/
+        ├── worker/           # Worker backend (clear purpose)
+        ├── frontend/         # React app
+        └── package.json
+
+      Steps:
+      1. Rename src/ directory to worker/
+      2. Update wrangler.toml:
+         - Change main = "src/index.ts" → "worker/index.ts"
+      3. Update tsconfig.json:
+         - Change "include": ["src/**/*"] → ["worker/**/*"]
+      4. Update all import paths:
+         - Find all "from 'src/*'" → "from 'worker/*'"
+         - Update relative imports in test files
+      5. Update package.json scripts if needed
+      6. Run all tests to verify (267 tests should pass)
+      7. Update .gitignore if needed
+      8. Update documentation references to src/
+    test_refs: []
+    notes: |
+      Benefits:
+      - Clear separation: worker/ = Cloudflare Workers, frontend/ = React
+      - Better developer experience
+      - Easier onboarding for new contributors
+      - Consistent with industry practices
+
+      Risk mitigation:
+      - Run full test suite after refactor
+      - Verify wrangler dev still works
+      - Check all import paths resolved correctly
+
+      Should be done before production deployment for clean structure.

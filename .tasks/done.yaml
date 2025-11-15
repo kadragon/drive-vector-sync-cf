@@ -534,3 +534,104 @@ completed_tasks:
       - REMOVED secrets: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN
       - ADDED secrets: GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_IMPERSONATION_EMAIL (optional)
       - Service Account email must be shared with target Google Drive folder
+
+  - task_id: TASK-028
+    spec_id: SPEC-web-dashboard-1
+    title: "Enhanced admin API endpoints for dashboard"
+    completed_at: "2025-11-15T20:06:00Z"
+    duration: "2 hours"
+    outcome: "Extended admin API with dashboard-ready fields and sync history endpoint"
+    tests_passed:
+      - TEST-web-dashboard-1
+    notes: |
+      Extended /admin/status endpoint with new fields:
+      - isLocked: boolean (sync in progress indicator)
+      - nextScheduledSync: ISO timestamp (calculated from cron schedule)
+      - lastSyncDuration: number (milliseconds of last sync)
+
+      Created new /admin/history endpoint:
+      - Returns last 30 sync results for charting
+      - Stored in KV with rolling window (30 entries max)
+      - Response includes: timestamp, filesProcessed, vectorsUpserted,
+        vectorsDeleted, duration, errors[]
+
+      Files modified:
+      - src/state/kv-state-manager.ts: Added SyncHistoryEntry interface and history methods
+        * saveSyncHistory(entry: SyncHistoryEntry)
+        * getSyncHistory(limit?: number)
+        * Implements rolling window with KV pagination to prevent unbounded growth
+      - src/api/admin-handler.ts: Extended /status and added /history endpoint
+      - src/sync/sync-orchestrator.ts: Save duration and history after each sync
+      - src/utils/cron.ts: New file with cron schedule calculation utilities
+        * getNextScheduledSync(cronExpression: string)
+        * parseCronExpression()
+
+      Tests added: 16 new unit tests
+      Total tests: 267 passing (251 existing + 16 new)
+
+      Key implementation details:
+      - KV pagination handling to prevent unbounded storage growth
+      - Rolling window cap enforced in saveSyncHistory
+      - Cron parser for calculating next scheduled sync time
+      - Comprehensive error handling for invalid cron expressions
+
+  - task_id: TASK-029
+    spec_id: SPEC-web-dashboard-1
+    title: "Vite + React frontend setup with DaisyUI and Recharts"
+    completed_at: "2025-11-15T20:30:00Z"
+    duration: "0.33 hours"
+    outcome: "Complete Vite + React frontend project with Tailwind CSS, DaisyUI, and Recharts"
+    tests_passed: []
+    notes: |
+      Frontend Project Setup:
+      - Initialized Vite 7 with React 18 + TypeScript template in /frontend
+      - Installed dependencies:
+        * tailwindcss@3.4.17 + postcss + autoprefixer
+        * daisyui@5.5.4
+        * recharts@2.15.0
+      - Created tailwind.config.js with DaisyUI plugin and light/dark themes
+      - Created postcss.config.js for Tailwind processing
+      - Updated src/index.css with Tailwind directives
+
+      Project Structure:
+      - Created src/components/ for React components
+      - Created src/hooks/ for custom hooks
+      - Created src/types/ for TypeScript definitions
+      - Created src/utils/ for utility functions
+
+      Vite Configuration (vite.config.ts):
+      - Build output: dist/ (minified, no sourcemaps)
+      - Dev server: port 5173
+      - API proxy: /admin/* and /health → http://localhost:8787
+      - Optimized rollup options for clean output
+
+      Type Definitions (src/types/api.ts):
+      - SyncStatus interface (lastSyncTime, filesProcessed, errorCount, isLocked, etc.)
+      - SyncStats interface (vectorCount, collectionInfo)
+      - SyncHistoryEntry interface (timestamp, metrics, errors)
+      - HealthCheck and ErrorResponse interfaces
+
+      App Component (src/App.tsx):
+      - DaisyUI navbar with title and dark mode toggle
+      - Hero section with health check status badge
+      - Four stat cards (Last Sync, Files Processed, Vector Count, Errors)
+      - Responsive grid layout (1/2/4 columns based on screen size)
+      - Health check API fetch on component mount
+
+      Root Package.json Scripts:
+      - frontend:dev - Start Vite dev server
+      - frontend:build - Build frontend for production
+      - frontend:install - Install frontend dependencies
+
+      Documentation:
+      - Created comprehensive frontend/README.md
+      - Development workflow documented
+      - API proxy configuration explained
+      - Next steps referenced
+
+      Build Verification:
+      - Successful production build
+      - Output: 0.46 kB HTML, 35.20 kB CSS, 196.86 kB JS
+      - All assets minified and ready for Worker embedding
+
+      Ready for next phase: TASK-030 (Dashboard UI components)
