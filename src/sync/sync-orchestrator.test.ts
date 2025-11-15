@@ -157,6 +157,23 @@ class MockKVStateManager {
   async releaseLock(): Promise<void> {
     this.locked = false;
   }
+
+  async isLocked(): Promise<boolean> {
+    return this.locked;
+  }
+
+  async updateSyncDuration(duration: number): Promise<void> {
+    this.state.lastSyncDuration = duration;
+  }
+
+  async saveSyncHistory(_entry: any): Promise<void> {
+    // Mock implementation - no-op for tests
+  }
+
+  async getSyncHistory(_limit?: number): Promise<any[]> {
+    // Mock implementation - return empty array
+    return [];
+  }
 }
 
 describe('SyncOrchestrator', () => {

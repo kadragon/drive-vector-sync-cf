@@ -3,7 +3,7 @@
  *
  * Trace:
  *   spec_id: SPEC-state-management-1
- *   task_id: TASK-008
+ *   task_id: TASK-008, TASK-028
  */
 
 export interface SyncState {
@@ -11,11 +11,26 @@ export interface SyncState {
   lastSyncTime: string | null;
   filesProcessed: number;
   errorCount: number;
+  lastSyncDuration?: number; // Duration in milliseconds
+}
+
+/**
+ * Sync history entry for dashboard charting
+ */
+export interface SyncHistoryEntry {
+  timestamp: string;
+  filesProcessed: number;
+  vectorsUpserted: number;
+  vectorsDeleted: number;
+  duration: number;
+  errors: string[];
 }
 
 const STATE_KEY = 'drive_start_page_token';
 const SYNC_LOCK_KEY = 'sync_lock';
+const SYNC_HISTORY_PREFIX = 'sync_history_';
 const LOCK_DURATION_MS = 1000 * 60 * 30; // 30 minutes
+const MAX_HISTORY_ENTRIES = 30; // Rolling window size
 
 /**
  * Manages sync state persistence using Cloudflare KV
@@ -105,5 +120,81 @@ export class KVStateManager {
     currentState.filesProcessed += filesProcessed;
     currentState.errorCount += errorCount;
     await this.setState(currentState);
+  }
+
+  /**
+   * Check if sync is currently locked (in progress)
+   */
+  async isLocked(): Promise<boolean> {
+    const existingLock = await this.kv.get(SYNC_LOCK_KEY);
+
+    if (!existingLock) {
+      return false;
+    }
+
+    const lockTime = parseInt(existingLock, 10);
+    const now = Date.now();
+
+    // Check if lock is still valid
+    return now - lockTime < LOCK_DURATION_MS;
+  }
+
+  /**
+   * Update last sync duration
+   */
+  async updateSyncDuration(duration: number): Promise<void> {
+    const currentState = await this.getState();
+    currentState.lastSyncDuration = duration;
+    await this.setState(currentState);
+  }
+
+  /**
+   * Save sync history entry
+   * Maintains a rolling window of MAX_HISTORY_ENTRIES
+   */
+  async saveSyncHistory(entry: SyncHistoryEntry): Promise<void> {
+    const timestamp = new Date(entry.timestamp).getTime();
+    const key = `${SYNC_HISTORY_PREFIX}${timestamp}`;
+
+    // Save the new entry
+    await this.kv.put(key, JSON.stringify(entry));
+
+    // Get all history entries and remove oldest if exceeding max
+    const allEntries = await this.getSyncHistory(MAX_HISTORY_ENTRIES + 10);
+
+    if (allEntries.length > MAX_HISTORY_ENTRIES) {
+      // Delete oldest entries
+      const entriesToDelete = allEntries.slice(MAX_HISTORY_ENTRIES);
+      for (const oldEntry of entriesToDelete) {
+        const oldTimestamp = new Date(oldEntry.timestamp).getTime();
+        const oldKey = `${SYNC_HISTORY_PREFIX}${oldTimestamp}`;
+        await this.kv.delete(oldKey);
+      }
+    }
+  }
+
+  /**
+   * Get sync history entries
+   * @param limit Maximum number of entries to return (default: 30)
+   * @returns Array of sync history entries, sorted by timestamp (newest first)
+   */
+  async getSyncHistory(limit: number = 30): Promise<SyncHistoryEntry[]> {
+    const entries: SyncHistoryEntry[] = [];
+
+    // List all keys with the sync_history prefix
+    const list = await this.kv.list({ prefix: SYNC_HISTORY_PREFIX });
+
+    // Fetch all history entries
+    for (const key of list.keys) {
+      const entryJson = await this.kv.get(key.name, 'json');
+      if (entryJson) {
+        entries.push(entryJson as SyncHistoryEntry);
+      }
+    }
+
+    // Sort by timestamp (newest first) and limit
+    return entries
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, limit);
   }
 }

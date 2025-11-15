@@ -3,12 +3,13 @@
  *
  * Trace:
  *   spec_id: SPEC-admin-api-1
- *   task_id: TASK-011
+ *   task_id: TASK-011, TASK-028
  */
 
 import { SyncOrchestrator } from '../sync/sync-orchestrator.js';
 import { KVStateManager } from '../state/kv-state-manager.js';
 import { VectorStoreClient } from '../types/vector-store.js';
+import { getNextCronExecution, getCronSchedule } from '../utils/cron.js';
 
 /**
  * Admin API request handler
@@ -42,6 +43,11 @@ export class AdminHandler {
       // GET /admin/stats - Get collection statistics
       if (path === '/admin/stats' && request.method === 'GET') {
         return await this.handleStats();
+      }
+
+      // GET /admin/history - Get sync history
+      if (path === '/admin/history' && request.method === 'GET') {
+        return await this.handleHistory(request);
       }
 
       return this.jsonResponse({ error: 'Not found', path }, 404);
@@ -96,6 +102,8 @@ export class AdminHandler {
    */
   private async handleStatus(): Promise<Response> {
     const state = await this.stateManager.getState();
+    const isLocked = await this.stateManager.isLocked();
+    const nextScheduledSync = getNextCronExecution(getCronSchedule());
 
     return this.jsonResponse({
       status: 'ok',
@@ -103,6 +111,9 @@ export class AdminHandler {
       filesProcessed: state.filesProcessed,
       errorCount: state.errorCount,
       hasStartPageToken: !!state.startPageToken,
+      isLocked,
+      nextScheduledSync,
+      lastSyncDuration: state.lastSyncDuration || null,
     });
   }
 
@@ -120,6 +131,27 @@ export class AdminHandler {
       collection: collectionInfo.name,
       vectorCount,
       status: collectionInfo.status,
+    });
+  }
+
+  /**
+   * Handle GET /admin/history
+   */
+  private async handleHistory(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const limitParam = url.searchParams.get('limit');
+    const limit = limitParam ? parseInt(limitParam, 10) : 30;
+
+    // Validate limit
+    if (isNaN(limit) || limit < 1 || limit > 100) {
+      return this.jsonResponse({ error: 'Invalid limit parameter (1-100)' }, 400);
+    }
+
+    const history = await this.stateManager.getSyncHistory(limit);
+
+    return this.jsonResponse({
+      history,
+      count: history.length,
     });
   }
 

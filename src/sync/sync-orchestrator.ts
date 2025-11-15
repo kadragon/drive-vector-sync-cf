@@ -13,7 +13,7 @@ import { chunkText } from '../embedding/chunking.js';
 import { computeChunkHash } from '../embedding/hash.js';
 import { VectorStoreClient, VectorPoint } from '../types/vector-store.js';
 import { generateVectorId } from '../vectorize/vector-id.js';
-import { KVStateManager } from '../state/kv-state-manager.js';
+import { KVStateManager, SyncHistoryEntry } from '../state/kv-state-manager.js';
 import { ErrorCollector, logError, toError } from '../errors/index.js';
 import { MetricsCollector } from '../monitoring/metrics.js';
 import { AlertingService, AlertConfig } from '../monitoring/alerting.js';
@@ -127,6 +127,18 @@ export class SyncOrchestrator {
       // Check for performance issues
       await this.alertingService.sendPerformanceAlert(metrics, perfMetrics);
 
+      // Save sync duration and history
+      await this.stateManager.updateSyncDuration(duration);
+      const historyEntry: SyncHistoryEntry = {
+        timestamp: new Date().toISOString(),
+        filesProcessed,
+        vectorsUpserted,
+        vectorsDeleted: 0,
+        duration,
+        errors: errorCollector.getSummary().errors.map(e => e.message),
+      };
+      await this.stateManager.saveSyncHistory(historyEntry);
+
       return {
         filesProcessed,
         vectorsUpserted,
@@ -200,12 +212,26 @@ export class SyncOrchestrator {
         // Send notification for successful sync with no changes
         await this.alertingService.sendSyncCompleted(metrics, perfMetrics);
 
+        const duration = Date.now() - startTime;
+
+        // Save sync duration and history
+        await this.stateManager.updateSyncDuration(duration);
+        const historyEntry: SyncHistoryEntry = {
+          timestamp: new Date().toISOString(),
+          filesProcessed: 0,
+          vectorsUpserted: 0,
+          vectorsDeleted: 0,
+          duration,
+          errors: [],
+        };
+        await this.stateManager.saveSyncHistory(historyEntry);
+
         return {
           filesProcessed: 0,
           vectorsUpserted: 0,
           vectorsDeleted: 0,
           errors: 0,
-          duration: Date.now() - startTime,
+          duration,
         };
       }
 
@@ -264,6 +290,18 @@ export class SyncOrchestrator {
 
       // Check for performance issues
       await this.alertingService.sendPerformanceAlert(metrics, perfMetrics);
+
+      // Save sync duration and history
+      await this.stateManager.updateSyncDuration(duration);
+      const historyEntry: SyncHistoryEntry = {
+        timestamp: new Date().toISOString(),
+        filesProcessed,
+        vectorsUpserted,
+        vectorsDeleted,
+        duration,
+        errors: errorCollector.getSummary().errors.map(e => e.message),
+      };
+      await this.stateManager.saveSyncHistory(historyEntry);
 
       return {
         filesProcessed,
