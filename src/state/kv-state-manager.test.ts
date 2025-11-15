@@ -28,8 +28,11 @@ class MockKVNamespace {
     this.store.delete(key);
   }
 
-  async list(): Promise<any> {
-    return { keys: [] };
+  async list(options?: { prefix?: string }): Promise<any> {
+    const keys = Array.from(this.store.keys())
+      .filter(key => !options?.prefix || key.startsWith(options.prefix))
+      .map(name => ({ name }));
+    return { keys };
   }
 
   async getWithMetadata(): Promise<any> {
@@ -190,6 +193,137 @@ describe('KVStateManager', () => {
       const state = await stateManager.getState();
       expect(state.filesProcessed).toBe(15);
       expect(state.errorCount).toBe(3);
+    });
+  });
+
+  describe('isLocked (TASK-028)', () => {
+    it('should return false when no lock exists', async () => {
+      const locked = await stateManager.isLocked();
+      expect(locked).toBe(false);
+    });
+
+    it('should return true when lock is active', async () => {
+      await stateManager.acquireLock();
+      const locked = await stateManager.isLocked();
+      expect(locked).toBe(true);
+    });
+
+    it('should return false when lock is expired', async () => {
+      // Set expired lock (31 minutes ago)
+      const oldTime = Date.now() - 31 * 60 * 1000;
+      await kvNamespace.put('sync_lock', oldTime.toString());
+
+      const locked = await stateManager.isLocked();
+      expect(locked).toBe(false);
+    });
+  });
+
+  describe('updateSyncDuration (TASK-028)', () => {
+    it('should update lastSyncDuration in state', async () => {
+      await stateManager.setState({
+        startPageToken: 'token',
+        lastSyncTime: '2025-11-15T00:00:00Z',
+        filesProcessed: 10,
+        errorCount: 0,
+      });
+
+      await stateManager.updateSyncDuration(45000);
+
+      const state = await stateManager.getState();
+      expect(state.lastSyncDuration).toBe(45000);
+    });
+  });
+
+  describe('saveSyncHistory and getSyncHistory (TASK-028)', () => {
+    it('should save and retrieve sync history', async () => {
+      const entry = {
+        timestamp: '2025-11-15T01:00:00Z',
+        filesProcessed: 10,
+        vectorsUpserted: 15,
+        vectorsDeleted: 0,
+        duration: 45000,
+        errors: [],
+      };
+
+      await stateManager.saveSyncHistory(entry);
+      const history = await stateManager.getSyncHistory();
+
+      expect(history).toHaveLength(1);
+      expect(history[0]).toEqual(entry);
+    });
+
+    it('should sort history by timestamp (newest first)', async () => {
+      const entry1 = {
+        timestamp: '2025-11-15T01:00:00Z',
+        filesProcessed: 10,
+        vectorsUpserted: 15,
+        vectorsDeleted: 0,
+        duration: 45000,
+        errors: [],
+      };
+
+      const entry2 = {
+        timestamp: '2025-11-15T02:00:00Z',
+        filesProcessed: 5,
+        vectorsUpserted: 8,
+        vectorsDeleted: 1,
+        duration: 30000,
+        errors: [],
+      };
+
+      await stateManager.saveSyncHistory(entry1);
+      await stateManager.saveSyncHistory(entry2);
+
+      const history = await stateManager.getSyncHistory();
+
+      expect(history).toHaveLength(2);
+      expect(history[0].timestamp).toBe('2025-11-15T02:00:00Z');
+      expect(history[1].timestamp).toBe('2025-11-15T01:00:00Z');
+    });
+
+    it('should limit history results', async () => {
+      // Add 5 entries
+      for (let i = 0; i < 5; i++) {
+        await stateManager.saveSyncHistory({
+          timestamp: new Date(2025, 10, 15, i).toISOString(),
+          filesProcessed: i,
+          vectorsUpserted: i * 2,
+          vectorsDeleted: 0,
+          duration: 30000,
+          errors: [],
+        });
+      }
+
+      const history = await stateManager.getSyncHistory(3);
+      expect(history).toHaveLength(3);
+    });
+
+    it('should maintain rolling window of max 30 entries', async () => {
+      // Add 35 entries
+      for (let i = 0; i < 35; i++) {
+        await stateManager.saveSyncHistory({
+          timestamp: new Date(2025, 10, 15, 0, i).toISOString(),
+          filesProcessed: i,
+          vectorsUpserted: i * 2,
+          vectorsDeleted: 0,
+          duration: 30000,
+          errors: [],
+        });
+      }
+
+      const history = await stateManager.getSyncHistory(100);
+
+      // Should have exactly 30 entries (not more)
+      expect(history.length).toBe(30);
+
+      // Should keep the newest 30 entries (filesProcessed 5-34)
+      // Sorted newest first, so first entry should be filesProcessed=34
+      expect(history[0].filesProcessed).toBe(34);
+      expect(history[29].filesProcessed).toBe(5);
+
+      // Oldest entries (0-4) should be deleted
+      const oldestExist = history.some(h => h.filesProcessed < 5);
+      expect(oldestExist).toBe(false);
     });
   });
 });

@@ -1,10 +1,12 @@
 # Google Drive → Qdrant Vector Sync System
 
-Automated RAG data pipeline that syncs Google Drive Markdown files to Qdrant Cloud using Cloudflare Workers.
+Automated RAG data pipeline that syncs Google Drive Markdown files to Qdrant Cloud
+using Cloudflare Workers.
 
 ## Architecture
 
-This system implements a **Spec-Driven Development (SDD) × Test-Driven Development (TDD)** approach with three core directories:
+This system implements a **Spec-Driven Development (SDD) × Test-Driven Development
+(TDD)** approach with three core directories:
 
 - **`.spec/`** - Functional specifications (WHAT should exist)
 - **`.tasks/`** - Operational task management (WHEN/WHAT NEXT)
@@ -21,7 +23,7 @@ This system implements a **Spec-Driven Development (SDD) × Test-Driven Developm
 
 ## Project Structure
 
-```
+```text
 .
 ├── .governance/        # Knowledge persistence
 │   ├── memory.md       # Session history and learnings
@@ -67,7 +69,8 @@ npm install
 
 ### Step 1: Google Service Account Setup
 
-This system uses Google Service Account authentication for secure, serverless access to Google Drive.
+This system uses Google Service Account authentication for secure, serverless access
+to Google Drive.
 
 #### 1.1 Create Service Account
 
@@ -95,6 +98,7 @@ This system uses Google Service Account authentication for secure, serverless ac
 6. **IMPORTANT**: Keep this file secure. It contains private credentials.
 
 The downloaded JSON file will look like this:
+
 ```json
 {
   "type": "service_account",
@@ -124,10 +128,11 @@ The Service Account needs explicit access to your target folder:
 #### 1.4 Get Folder ID
 
 The folder ID is in the URL when viewing the folder in Google Drive:
+
 ```
 https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOpQrStUvWxYz
-                                      └─────────────┬─────────────┘
-                                              This is the Folder ID
+                                       └─────────────┬─────────────┘
+                                               This is the Folder ID
 ```
 
 Save this ID - you'll need it for the secrets configuration.
@@ -145,18 +150,21 @@ wrangler vectorize create worknote-store \
 ```
 
 Expected output:
-```
+
+```text
 ✅ Successfully created index 'worknote-store'
 📋 Dimensions: 3072
 📏 Metric: cosine
 ```
 
 Verify the index exists:
+
 ```bash
 wrangler vectorize list
 ```
 
 The index is already bound in `wrangler.toml`:
+
 ```toml
 [[vectorize]]
 binding = "VECTORIZE"
@@ -203,6 +211,7 @@ wrangler secret put GOOGLE_SERVICE_ACCOUNT_JSON
 ```
 
 **Tip**: Use `cat` to copy the file contents:
+
 ```bash
 cat path/to/service-account-key.json | wrangler secret put GOOGLE_SERVICE_ACCOUNT_JSON
 ```
@@ -231,6 +240,7 @@ wrangler secret put ADMIN_TOKEN
 ```
 
 Generate a secure token:
+
 ```bash
 # On macOS/Linux:
 openssl rand -hex 32
@@ -247,7 +257,10 @@ wrangler secret put GOOGLE_IMPERSONATION_EMAIL
 # Enter the email address to impersonate
 ```
 
-**Note**: This requires [domain-wide delegation](https://developers.google.com/identity/protocols/oauth2/service-account#delegatingauthority) to be enabled for your Service Account.
+**Note**: This requires [domain-wide delegation] to be enabled for your Service
+Account.
+
+[domain-wide delegation]: https://developers.google.com/identity/protocols/oauth2/service-account#delegatingauthority
 
 #### 3.6 Optional: Webhook Alerts
 
@@ -270,12 +283,14 @@ wrangler secret put PERFORMANCE_THRESHOLD
 #### 3.7 Verify Secrets
 
 List all configured secrets:
+
 ```bash
 wrangler secret list
 ```
 
 Expected output:
-```
+
+```text
 GOOGLE_SERVICE_ACCOUNT_JSON
 GOOGLE_ROOT_FOLDER_ID
 OPENAI_API_KEY
@@ -291,12 +306,14 @@ npm run deploy
 ```
 
 Or using wrangler directly:
+
 ```bash
 wrangler deploy
 ```
 
 Expected output:
-```
+
+```text
 Total Upload: XX.XX KiB / gzip: XX.XX KiB
 Uploaded worknote-maker-cf (X.XX sec)
 Published worknote-maker-cf (X.XX sec)
@@ -307,11 +324,13 @@ Current Deployment ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ### Step 5: Verify Deployment
 
 Test the health check endpoint:
+
 ```bash
 curl https://your-worker.workers.dev/health
 ```
 
 Expected response:
+
 ```json
 {
   "status": "ok",
@@ -320,6 +339,7 @@ Expected response:
 ```
 
 Check sync status (requires admin token):
+
 ```bash
 curl https://your-worker.workers.dev/admin/status \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
@@ -335,6 +355,7 @@ curl -X POST https://your-worker.workers.dev/admin/resync \
 ```
 
 Monitor the logs:
+
 ```bash
 wrangler tail
 ```
@@ -387,11 +408,13 @@ ADMIN_TOKEN=your-local-token
 ## API Reference
 
 ### Health Check
+
 ```http
 GET /health
 ```
 
 **Response:**
+
 ```json
 {
   "status": "ok",
@@ -402,7 +425,8 @@ GET /health
 ### Admin Endpoints
 
 All admin endpoints require Bearer token authentication:
-```
+
+```text
 Authorization: Bearer YOUR_ADMIN_TOKEN
 ```
 
@@ -416,9 +440,14 @@ Clears sync state and re-processes all files in the Drive folder.
 
 > **⚠️ Warning: Potential Timeouts**
 >
-> This endpoint performs a synchronous resync and may time out on large datasets due to Cloudflare Worker execution limits (30 seconds for HTTP requests on paid plans). For production environments with many files, it is recommended to rely on the automatic daily cron trigger. This endpoint is best used for small datasets or for development and testing where timeouts are not a concern.
+> This endpoint performs a synchronous resync and may time out on large datasets due
+> to Cloudflare Worker execution limits (30 seconds for HTTP requests on paid plans).
+> For production environments with many files, it is recommended to rely on the
+> automatic daily cron trigger. This endpoint is best used for small datasets or for
+> development and testing where timeouts are not a concern.
 
 **Response 200:**
+
 ```json
 {
   "success": true,
@@ -434,6 +463,7 @@ Clears sync state and re-processes all files in the Drive folder.
 ```
 
 **Response 409 (Conflict):**
+
 ```json
 {
   "error": "Sync already in progress. Please wait for current sync to complete."
@@ -449,6 +479,7 @@ GET /admin/status
 Returns the state of the last sync operation.
 
 **Response 200:**
+
 ```json
 {
   "syncState": {
@@ -471,6 +502,7 @@ GET /admin/stats
 Returns vector index statistics.
 
 **Response 200:**
+
 ```json
 {
   "indexName": "worknote-store",
@@ -482,6 +514,7 @@ Returns vector index statistics.
 ### Example Usage
 
 **Bash:**
+
 ```bash
 # Set your admin token
 export ADMIN_TOKEN="your-admin-token-here"
@@ -501,6 +534,7 @@ curl "$WORKER_URL/admin/stats" \
 ```
 
 **JavaScript:**
+
 ```javascript
 const ADMIN_TOKEN = 'your-admin-token';
 const WORKER_URL = 'https://your-worker.workers.dev';
@@ -509,8 +543,8 @@ async function triggerResync() {
   const response = await fetch(`${WORKER_URL}/admin/resync`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${ADMIN_TOKEN}`
-    }
+      Authorization: `Bearer ${ADMIN_TOKEN}`,
+    },
   });
   return response.json();
 }
@@ -529,6 +563,7 @@ The system supports Slack and Discord webhooks for automated alerts.
 1. Create a Slack app and add an Incoming Webhook
 2. Get the webhook URL (e.g., `https://hooks.slack.com/services/T00/B00/XXX`)
 3. Configure secrets:
+
    ```bash
    wrangler secret put WEBHOOK_URL
    # Enter your Slack webhook URL
@@ -538,6 +573,7 @@ The system supports Slack and Discord webhooks for automated alerts.
    ```
 
 **Alert Messages:**
+
 - Sync completion with metrics (files processed, duration, throughput)
 - Sync failures with error details
 - Performance degradation warnings
@@ -547,6 +583,7 @@ The system supports Slack and Discord webhooks for automated alerts.
 1. Create a webhook in your Discord channel settings
 2. Get the webhook URL (e.g., `https://discord.com/api/webhooks/XXX/YYY`)
 3. Configure secrets:
+
    ```bash
    wrangler secret put WEBHOOK_URL
    # Enter your Discord webhook URL
@@ -558,6 +595,7 @@ The system supports Slack and Discord webhooks for automated alerts.
 #### Performance Threshold
 
 Set a custom threshold for performance alerts:
+
 ```bash
 wrangler secret put PERFORMANCE_THRESHOLD
 # Enter files/sec threshold (e.g., 0.5)
@@ -580,6 +618,7 @@ Monitor your worker in the Cloudflare dashboard:
 ### Log Streaming
 
 Stream real-time logs:
+
 ```bash
 # Stream all logs
 wrangler tail
@@ -594,12 +633,14 @@ wrangler tail --search "sync"
 ### Cost Tracking
 
 The system logs API costs to console:
+
 - **OpenAI**: $0.00013 per 1K tokens (text-embedding-3-large)
 - **Drive API**: Quota usage tracking
 - **Vectorize**: Included with Workers plan
 
 Check logs after sync for cost summary:
-```
+
+```text
 💰 Cost Summary:
   OpenAI: $0.45 (3,500 tokens)
   Drive API: 45 calls
@@ -615,9 +656,11 @@ Check logs after sync for cost summary:
 #### 1. "Service Account authentication failed"
 
 **Symptoms:**
+
 - Error: `invalid_grant` or `unauthorized_client`
 
 **Solutions:**
+
 - Verify the Service Account JSON is correctly formatted
 - Check that the Service Account email has access to the target folder
 - Ensure Drive API is enabled in Google Cloud Console
@@ -634,115 +677,154 @@ wrangler tail --status error
 #### 2. "Vectorize index not found"
 
 **Symptoms:**
+
 - Error: `Vectorize index 'worknote-store' may not exist yet`
 
 **Solutions:**
+
 - Create the index:
-  ```bash
-  wrangler vectorize create worknote-store \
+
+```bash
+wrangler vectorize create worknote-store \
     --dimensions=3072 \
-    --metric=cosine
-  ```
+ --metric=cosine
+```
+
 - Verify binding in `wrangler.toml`:
+
   ```toml
-  [[vectorize]]
-  binding = "VECTORIZE"
-  index_name = "worknote-store"
+
   ```
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "worknote-store"
+
+````
+
 - Redeploy after creating index:
-  ```bash
-  wrangler deploy
-  ```
+
+```bash
+wrangler deploy
+````
 
 #### 3. "KV namespace not bound"
 
 **Symptoms:**
+
 - Error: `KV namespace binding not found`
 
 **Solutions:**
+
 - Create KV namespaces:
+
   ```bash
   wrangler kv:namespace create "WORKNOTE_SYNC_STATE"
   wrangler kv:namespace create "WORKNOTE_FILE_VECTOR_INDEX"
   ```
+
 - Update `wrangler.toml` with correct IDs
 - Redeploy
 
 #### 4. "OpenAI rate limit exceeded"
 
 **Symptoms:**
+
 - Error: `429 Too Many Requests`
 
 **Solutions:**
+
 - The system has built-in rate limiting (5000 requests/min)
 - Reduce `MAX_CONCURRENCY` in `wrangler.toml`:
-  ```toml
+
+```toml
   [vars]
   MAX_CONCURRENCY = "2"  # Default is 4
-  ```
+```
+
 - Check your OpenAI account usage limits
 
 #### 5. "Sync takes too long / times out"
 
 **Symptoms:**
+
 - Worker timeout errors
 - Incomplete syncs
 
 **Solutions:**
+
 - Reduce batch size:
-  ```toml
-  [vars]
+
+```toml
+[vars]
   MAX_BATCH_SIZE = "16"  # Default is 32
-  ```
+```
+
 - Reduce concurrency:
+
   ```toml
   [vars]
   MAX_CONCURRENCY = "2"  # Default is 4
   ```
+
 - Split large folders into smaller subfolders
 
 #### 6. "Drive folder not accessible"
 
 **Symptoms:**
+
 - Error: `File not found` or `Insufficient permissions`
 
 **Solutions:**
+
 - Verify Service Account email is shared with the folder
 - Check folder ID is correct (from URL)
 - Ensure Drive API is enabled
 - Test folder access:
-  ```bash
-  # Use Drive API Explorer
+
+  ```text
   https://developers.google.com/drive/api/v3/reference/files/get
   ```
 
 #### 7. "Admin API returns 401 Unauthorized"
 
 **Symptoms:**
+
 - `{"error": "Unauthorized"}`
 
 **Solutions:**
+
 - Verify admin token is correctly set:
+
   ```bash
-  wrangler secret list
+
   ```
+
+wrangler secret list
+
+````
+
 - Use correct Authorization header:
-  ```bash
-  curl -H "Authorization: Bearer YOUR_TOKEN" ...
-  ```
+
+```bash
+curl -H "Authorization: Bearer YOUR_TOKEN" ...
+````
+
 - Regenerate token if necessary:
-  ```bash
+
+```bash
   # 1. Generate a new secure token and copy it
   openssl rand -hex 32
 
   # 2. Update the secret with the new token
   # Paste the token when prompted
   wrangler secret put ADMIN_TOKEN
-  ```
+```
 
 ### Debug Mode
 
 Enable verbose logging:
+
 ```bash
 # Local development
 LOG_LEVEL=debug npm run dev
@@ -758,11 +840,13 @@ If issues persist:
 1. Check logs: `wrangler tail --status error`
 2. Verify all secrets: `wrangler secret list`
 3. Test locally: `npm run dev` with `.dev.vars`
-4. Check Cloudflare status: https://www.cloudflarestatus.com/
+4. Check [Cloudflare status]
 5. Open an issue with:
    - Error message
    - Relevant logs
    - Configuration (sanitized, no secrets)
+
+[Cloudflare status]: https://www.cloudflarestatus.com/
 
 ---
 
@@ -779,7 +863,8 @@ This project follows the SDD × TDD loop:
 
 ### Next Steps
 
-Check `.tasks/current.yaml` for the active task, or see `.tasks/backlog.yaml` for pending work.
+Check `.tasks/current.yaml` for the active task, or see `.tasks/backlog.yaml` for
+pending work.
 
 ## Performance
 

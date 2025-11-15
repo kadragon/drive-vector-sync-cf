@@ -4,20 +4,23 @@
 current_task: null
 
 # Latest completed task:
-# - TASK-015: Create deployment documentation
-# Completed at: 2025-11-15T14:30:00Z
+# - TASK-028: Enhanced admin API endpoints for dashboard
+# Completed at: 2025-11-15T20:06:00Z
 #
-# Documentation added:
-# - Comprehensive Google Service Account setup guide
-# - Cloudflare infrastructure setup (Vectorize + KV)
-# - Step-by-step secrets configuration with examples
-# - Deployment verification procedures
-# - Complete API reference with examples
-# - Monitoring and alerting setup (Slack/Discord)
-# - Troubleshooting guide with 7 common issues
-# - Development workflow and local testing guide
+# Changes implemented:
+# - Extended /admin/status with isLocked, nextScheduledSync, lastSyncDuration fields
+# - Created /admin/history endpoint for sync history charting
+# - Added sync history storage with rolling window (30 entries) in KV
+# - Implemented cron schedule calculation utilities
+# - Updated sync orchestrator to save history after each sync
+# - Added 16 new unit tests (total: 267 tests passing)
+#
+# Files modified:
+# - src/state/kv-state-manager.ts: Added SyncHistoryEntry interface and history methods
+# - src/api/admin-handler.ts: Extended /status and added /history endpoint
+# - src/sync/sync-orchestrator.ts: Save duration and history after sync
+# - src/utils/cron.ts: Cron schedule calculation utilities
+# - Added comprehensive tests for all new functionality
 #
 # Next priority (from backlog.yaml):
-# 1. TASK-021: Production deployment (ready - all dependencies met)
-#
-# When ready to start next task, move from backlog.yaml here.
+# 1. TASK-029: Vite + React frontend setup (ready - dependencies met)

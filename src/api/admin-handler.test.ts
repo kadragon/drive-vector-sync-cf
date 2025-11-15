@@ -104,8 +104,21 @@ class MockKVStateManager {
     this.locked = false;
   }
 
-  isLocked(): boolean {
+  async isLocked(): Promise<boolean> {
     return this.locked;
+  }
+
+  async updateSyncDuration(duration: number): Promise<void> {
+    this.state.lastSyncDuration = duration;
+  }
+
+  async saveSyncHistory(_entry: any): Promise<void> {
+    // Mock implementation - no-op for tests
+  }
+
+  async getSyncHistory(_limit?: number): Promise<any[]> {
+    // Mock implementation - return empty array
+    return [];
   }
 }
 
@@ -225,7 +238,7 @@ describe('AdminHandler', () => {
       const response = await handler.handleRequest(request);
 
       expect(response.status).toBe(200);
-      expect(stateManager.isLocked()).toBe(false); // Should be released after
+      expect(await stateManager.isLocked()).toBe(false); // Should be released after
     });
 
     it('should return 409 if sync already running', async () => {
@@ -298,7 +311,7 @@ describe('AdminHandler', () => {
       await handler.handleRequest(request);
 
       // Lock should be released
-      expect(stateManager.isLocked()).toBe(false);
+      expect(await stateManager.isLocked()).toBe(false);
     });
   });
 
