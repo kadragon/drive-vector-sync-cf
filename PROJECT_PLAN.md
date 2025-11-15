@@ -5,6 +5,7 @@
 This project implements an automated RAG data pipeline that syncs Google Drive Markdown files to Qdrant Cloud using Cloudflare Workers. The system runs daily at KST 01:00, using Google Drive's `changes` API for efficient incremental updates.
 
 **Key Deliverables:**
+
 - Serverless sync pipeline on Cloudflare Workers
 - Google Drive integration with OAuth2
 - OpenAI text-embedding-3-large integration
@@ -32,6 +33,7 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 ### Priority 1: Core Infrastructure
 
 #### TASK-013: Project Infrastructure Setup
+
 **Estimated:** 2 hours
 **Status:** ✅ COMPLETED
 
@@ -42,34 +44,40 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 - [x] Establish project structure (`.spec/`, `.tasks/`, `.governance/`)
 
 #### TASK-008: KV State Management
+
 **Estimated:** 2 hours
 **Dependencies:** TASK-013
 **Spec:** `SPEC-state-management-1`
 
 **Implementation Goals:**
+
 - Create state manager interface for KV operations
 - Implement `get/set` for startPageToken persistence
 - Handle first-run scenario (no existing state)
 - Add error handling for KV unavailability
 
 **Test Coverage:**
+
 - Load state on first run (null token)
 - Save startPageToken after successful sync
 - Load startPageToken on subsequent runs
 - Handle missing KV namespace gracefully
 
 **Files to Create:**
+
 - `src/services/state-manager.ts`
 - `src/services/state-manager.test.ts`
 
 ---
 
 #### TASK-006: Qdrant Collection Initialization
+
 **Estimated:** 2 hours
 **Dependencies:** TASK-013
 **Spec:** `SPEC-qdrant-sync-1`
 
 **Implementation Goals:**
+
 - Create Qdrant client with API authentication
 - Implement collection initialization with schema:
   - Vector size: 3072 (text-embedding-3-large)
@@ -78,11 +86,13 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 - Handle "collection already exists" scenario
 
 **Test Coverage:**
+
 - Create new collection successfully
 - Verify collection schema
 - Handle existing collection gracefully
 
 **Files to Create:**
+
 - `src/clients/qdrant-client.ts`
 - `src/clients/qdrant-client.test.ts`
 
@@ -91,33 +101,39 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 ### Priority 2: Google Drive Integration
 
 #### TASK-001: OAuth2 Authentication
+
 **Estimated:** 3 hours
 **Dependencies:** TASK-013
 **Spec:** `SPEC-drive-integration-1`
 
 **Implementation Goals:**
+
 - Create Google Drive OAuth2 client
 - Implement token refresh logic using refresh token
 - Store credentials from Cloudflare Secrets
 - Handle token expiration gracefully
 
 **Test Coverage:**
+
 - Successfully authenticate with valid credentials
 - Refresh expired access token
 - Handle invalid credentials error
 
 **Files to Create:**
+
 - `src/clients/drive-client.ts`
 - `src/clients/drive-client.test.ts`
 
 ---
 
 #### TASK-002: Recursive Folder Scanning
+
 **Estimated:** 4 hours
 **Dependencies:** TASK-001
 **Spec:** `SPEC-drive-integration-1`
 
 **Implementation Goals:**
+
 - Implement recursive folder traversal
 - Filter for `.md` files only
 - Handle pagination (pageToken)
@@ -125,29 +141,34 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 - Build full path from parent chain
 
 **Test Coverage:**
+
 - List all .md files from root folder recursively
 - Handle pagination for large folders (>100 files)
 - Construct correct file paths
 - Filter non-Markdown files
 
 **Files to Create:**
+
 - `src/services/drive-scanner.ts`
 - `src/services/drive-scanner.test.ts`
 
 ---
 
 #### TASK-003: Changes API Integration
+
 **Estimated:** 4 hours
 **Dependencies:** TASK-001, TASK-008
 **Spec:** `SPEC-drive-integration-1`
 
 **Implementation Goals:**
+
 - Implement `changes.list` API calls with startPageToken
 - Detect change types: added, modified, deleted
 - Handle pagination for large changesets
 - Implement retry logic (3 attempts, exponential backoff)
 
 **Test Coverage:**
+
 - Fetch changes since last startPageToken
 - Identify added files correctly
 - Identify modified files correctly
@@ -155,6 +176,7 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 - Handle API rate limits with retry
 
 **Files to Create:**
+
 - `src/services/drive-changes.ts`
 - `src/services/drive-changes.test.ts`
 
@@ -165,46 +187,54 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 ### Priority 1: Text Processing
 
 #### TASK-004: Text Chunking with Token Counting
+
 **Estimated:** 3 hours
 **Dependencies:** TASK-013
 **Spec:** `SPEC-embedding-pipeline-1`
 
 **Implementation Goals:**
+
 - Integrate `tiktoken` for accurate token counting
 - Implement chunking at 2000 token boundaries
 - Preserve chunk metadata (index, token count)
 - Handle edge cases (empty files, very small files)
 
 **Test Coverage:**
+
 - Generate single chunk for small file (<2000 tokens)
 - Split large file at 2000 token boundaries
 - Track chunk indices correctly (0, 1, 2, ...)
 - Calculate accurate token counts
 
 **Files to Create:**
+
 - `src/utils/text-chunker.ts`
 - `src/utils/text-chunker.test.ts`
 
 ---
 
 #### TASK-005: OpenAI Embedding Integration
+
 **Estimated:** 3 hours
 **Dependencies:** TASK-004
 **Spec:** `SPEC-embedding-pipeline-1`
 
 **Implementation Goals:**
+
 - Create OpenAI client with API key from Secrets
 - Implement batch embedding (16-32 chunks per request)
 - Validate vector dimensions (3072)
 - Handle API errors gracefully (skip file, log error)
 
 **Test Coverage:**
+
 - Generate embedding for single chunk
 - Batch embed multiple chunks (16-32)
 - Validate embedding dimensions
 - Handle API errors without crashing
 
 **Files to Create:**
+
 - `src/clients/openai-client.ts`
 - `src/clients/openai-client.test.ts`
 - `src/services/embedding-service.ts`
@@ -215,17 +245,20 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 ### Priority 2: Qdrant Synchronization
 
 #### TASK-007: Vector Upsert and Delete Operations
+
 **Estimated:** 4 hours
 **Dependencies:** TASK-006
 **Spec:** `SPEC-qdrant-sync-1`
 
 **Implementation Goals:**
+
 - Implement batch vector upsert with metadata
 - Generate vector IDs: `{file_id}_{chunk_index}`
 - Implement delete by file_id filter
 - Handle upsert failures with retry
 
 **Metadata Schema:**
+
 ```typescript
 {
   file_id: string;
@@ -237,6 +270,7 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 ```
 
 **Test Coverage:**
+
 - Upsert single-chunk file vector
 - Upsert multi-chunk file vectors
 - Delete all vectors for a given file_id
@@ -244,6 +278,7 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 - Generate correct vector IDs
 
 **Files to Create:**
+
 - `src/services/qdrant-service.ts`
 - `src/services/qdrant-service.test.ts`
 
@@ -254,11 +289,13 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 ### Priority 1: Error Handling
 
 #### TASK-010: Comprehensive Error Handling
+
 **Estimated:** 4 hours
 **Dependencies:** None (cross-cutting concern)
 **Spec:** `SPEC-error-handling-1`
 
 **Implementation Goals:**
+
 - Create custom error classes for domain errors
 - Implement retry logic with exponential backoff
 - Add structured logging (JSON format)
@@ -266,12 +303,14 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 - Handle OAuth token refresh on expiration
 
 **Error Categories:**
+
 - `DriveAPIError` - Google Drive API failures
 - `EmbeddingError` - OpenAI API failures
 - `QdrantError` - Qdrant operations failures
 - `StateError` - KV state management failures
 
 **Test Coverage:**
+
 - Retry failed operations 3 times
 - Skip failed files and continue pipeline
 - Log errors with context
@@ -279,6 +318,7 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 - Generate error summary
 
 **Files to Create:**
+
 - `src/utils/errors.ts`
 - `src/utils/retry.ts`
 - `src/utils/retry.test.ts`
@@ -289,11 +329,13 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 ### Priority 2: Main Sync Pipeline
 
 #### TASK-012: Sync Orchestrator
+
 **Estimated:** 5 hours
 **Dependencies:** TASK-003, TASK-005, TASK-007, TASK-008, TASK-010
 **Spec:** None (integration task)
 
 **Implementation Goals:**
+
 - Create main sync pipeline that orchestrates:
   1. Load state (startPageToken from KV)
   2. Fetch Drive changes (or full scan if first run)
@@ -306,6 +348,7 @@ This project follows **Spec-Driven Development (SDD) × Test-Driven Development 
 - Generate sync result summary
 
 **Processing Flow:**
+
 ```
 Load State
     ↓
@@ -326,6 +369,7 @@ Return Sync Result
 ```
 
 **Test Coverage:**
+
 - Execute full sync on first run
 - Execute incremental sync with changes
 - Handle file additions correctly
@@ -335,6 +379,7 @@ Return Sync Result
 - Generate accurate sync result
 
 **Files to Create:**
+
 - `src/services/sync-orchestrator.ts`
 - `src/services/sync-orchestrator.test.ts`
 
@@ -345,22 +390,26 @@ Return Sync Result
 ### Priority 1: Cron Scheduling
 
 #### TASK-009: Cron Trigger Handler
+
 **Estimated:** 2 hours
 **Dependencies:** TASK-012
 **Spec:** `SPEC-scheduling-1`
 
 **Implementation Goals:**
+
 - Configure cron trigger in `wrangler.toml` (17:00 UTC = 01:00 KST)
 - Implement scheduled event handler in `src/index.ts`
 - Add concurrency check (prevent parallel runs)
 - Handle no-op case (no changes) efficiently
 
 **Test Coverage:**
+
 - Handle scheduled event correctly
 - Prevent concurrent sync executions
 - Complete no-op sync quickly
 
 **Files to Modify:**
+
 - `src/index.ts` (scheduled handler)
 
 ---
@@ -368,11 +417,13 @@ Return Sync Result
 ### Priority 2: Admin API
 
 #### TASK-011: Admin API Endpoints
+
 **Estimated:** 3 hours
 **Dependencies:** TASK-012
 **Spec:** `SPEC-admin-api-1`
 
 **Implementation Goals:**
+
 - Implement Bearer token authentication middleware
 - Create endpoints:
   - `POST /admin/resync` - Trigger full resync (clear state)
@@ -384,6 +435,7 @@ Return Sync Result
 **API Specifications:**
 
 **POST /admin/resync**
+
 ```
 Request:
   Authorization: Bearer {ADMIN_TOKEN}
@@ -401,6 +453,7 @@ Response 409:
 ```
 
 **GET /admin/status**
+
 ```
 Request:
   Authorization: Bearer {ADMIN_TOKEN}
@@ -417,15 +470,18 @@ Response 200:
 ```
 
 **Test Coverage:**
+
 - Trigger full resync successfully
 - Fetch sync status correctly
 - Reject unauthorized requests (401)
 - Prevent concurrent syncs (409)
 
 **Files to Modify:**
+
 - `src/index.ts` (fetch handler)
 
 **Files to Create:**
+
 - `src/services/admin-service.ts`
 - `src/services/admin-service.test.ts`
 
@@ -436,11 +492,13 @@ Response 200:
 ### Priority 1: Integration Testing
 
 #### TASK-014: End-to-End Integration Tests
+
 **Estimated:** 4 hours
 **Dependencies:** TASK-012
 **Spec:** None
 
 **Implementation Goals:**
+
 - Create integration test suite with mocked external APIs
 - Test complete sync pipeline end-to-end
 - Mock Google Drive API responses
@@ -449,6 +507,7 @@ Response 200:
 - Use in-memory KV for state
 
 **Test Scenarios:**
+
 - Full sync on first run (no state)
 - Incremental sync with 5 added files
 - Incremental sync with 3 modified files
@@ -457,6 +516,7 @@ Response 200:
 - Error recovery scenarios
 
 **Files to Create:**
+
 - `tests/integration/full-sync.test.ts`
 - `tests/integration/incremental-sync.test.ts`
 - `tests/mocks/drive-api-mock.ts`
@@ -468,11 +528,13 @@ Response 200:
 ### Priority 2: Documentation
 
 #### TASK-015: Deployment Documentation
+
 **Estimated:** 2 hours
 **Dependencies:** TASK-014
 **Spec:** None
 
 **Documentation Goals:**
+
 - Complete setup instructions
 - Secrets configuration guide
 - Google OAuth2 setup walkthrough
@@ -482,6 +544,7 @@ Response 200:
 - Performance tuning recommendations
 
 **Files to Create/Update:**
+
 - `DEPLOYMENT.md` - Step-by-step deployment guide
 - `TROUBLESHOOTING.md` - Common issues and solutions
 - `ARCHITECTURE.md` - System architecture documentation
@@ -491,13 +554,13 @@ Response 200:
 
 ## Timeline Overview
 
-| Phase | Duration | Tasks | Status |
-|-------|----------|-------|--------|
-| **Phase 1: Foundation** | Week 1-2 | TASK-013, TASK-008, TASK-006, TASK-001, TASK-002, TASK-003 | ⏳ In Progress |
-| **Phase 2: Embedding** | Week 2-3 | TASK-004, TASK-005, TASK-007 | 📋 Planned |
-| **Phase 3: Orchestration** | Week 3-4 | TASK-010, TASK-012 | 📋 Planned |
-| **Phase 4: Scheduling** | Week 4-5 | TASK-009, TASK-011 | 📋 Planned |
-| **Phase 5: Testing** | Week 5-6 | TASK-014, TASK-015 | 📋 Planned |
+| Phase                      | Duration | Tasks                                                      | Status         |
+| -------------------------- | -------- | ---------------------------------------------------------- | -------------- |
+| **Phase 1: Foundation**    | Week 1-2 | TASK-013, TASK-008, TASK-006, TASK-001, TASK-002, TASK-003 | ⏳ In Progress |
+| **Phase 2: Embedding**     | Week 2-3 | TASK-004, TASK-005, TASK-007                               | 📋 Planned     |
+| **Phase 3: Orchestration** | Week 3-4 | TASK-010, TASK-012                                         | 📋 Planned     |
+| **Phase 4: Scheduling**    | Week 4-5 | TASK-009, TASK-011                                         | 📋 Planned     |
+| **Phase 5: Testing**       | Week 5-6 | TASK-014, TASK-015                                         | 📋 Planned     |
 
 ---
 
@@ -505,28 +568,29 @@ Response 200:
 
 ### Technical Risks
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Cloudflare Workers CPU limits | High | Implement concurrency control, batch operations |
-| Google Drive API rate limits | Medium | Exponential backoff, respect quotas |
-| OpenAI API cost overruns | Medium | Batch embeddings, monitor usage |
-| Qdrant connection failures | High | Retry logic, circuit breaker pattern |
-| OAuth token expiration | Medium | Automatic refresh, error handling |
+| Risk                          | Impact | Mitigation                                      |
+| ----------------------------- | ------ | ----------------------------------------------- |
+| Cloudflare Workers CPU limits | High   | Implement concurrency control, batch operations |
+| Google Drive API rate limits  | Medium | Exponential backoff, respect quotas             |
+| OpenAI API cost overruns      | Medium | Batch embeddings, monitor usage                 |
+| Qdrant connection failures    | High   | Retry logic, circuit breaker pattern            |
+| OAuth token expiration        | Medium | Automatic refresh, error handling               |
 
 ### Operational Risks
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
+| Risk                       | Impact | Mitigation                                   |
+| -------------------------- | ------ | -------------------------------------------- |
 | Large initial sync timeout | Medium | Implement resumable sync, process in batches |
-| Concurrent cron executions | High | Lock mechanism via KV or Durable Objects |
-| Data inconsistency | High | Transactional updates, validation checks |
-| Silent failures | Medium | Comprehensive logging, monitoring webhooks |
+| Concurrent cron executions | High   | Lock mechanism via KV or Durable Objects     |
+| Data inconsistency         | High   | Transactional updates, validation checks     |
+| Silent failures            | Medium | Comprehensive logging, monitoring webhooks   |
 
 ---
 
 ## Success Criteria
 
 ### Functional Requirements ✅
+
 - [ ] Authenticate with Google Drive via OAuth2
 - [ ] Scan root folder recursively for .md files
 - [ ] Detect file changes using Drive changes API
@@ -537,6 +601,7 @@ Response 200:
 - [ ] Provide admin API for manual operations
 
 ### Non-Functional Requirements ✅
+
 - [ ] Process 2000 files within Workers timeout limits
 - [ ] Handle API errors gracefully without data loss
 - [ ] Maintain state persistence across runs
@@ -545,6 +610,7 @@ Response 200:
 - [ ] Provide deployment guide
 
 ### Performance Targets ✅
+
 - [ ] Initial sync: <10 minutes for 2000 files
 - [ ] Incremental sync: <1 minute for 10 files
 - [ ] API response time: <2 seconds for admin endpoints
@@ -555,6 +621,7 @@ Response 200:
 ## Monitoring & Observability
 
 ### Key Metrics to Track
+
 - Sync execution time
 - Files processed per run
 - Vectors upserted/deleted per run
@@ -563,12 +630,14 @@ Response 200:
 - KV read/write operations
 
 ### Logging Strategy
+
 - Structured JSON logs
 - Include trace IDs for request correlation
 - Log levels: ERROR, WARN, INFO, DEBUG
 - Context: timestamp, task_id, spec_id
 
 ### Alerting (Optional Future Enhancement)
+
 - Sync failures (>3 consecutive failures)
 - API quota exhaustion
 - Abnormal execution time (>10 minutes)
@@ -589,6 +658,7 @@ Response 200:
 ### Development Workflow
 
 For each task:
+
 1. Read specification from `.spec/`
 2. Write tests (RED)
 3. Implement code (GREEN)
