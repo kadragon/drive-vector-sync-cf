@@ -131,7 +131,7 @@ describe('MetricsCollector', () => {
       expect(metrics.driveApiCalls).toBe(2);
     });
 
-    it('should record Qdrant API calls', () => {
+    it('should record Vectorize API calls', () => {
       collector.recordVectorIndexCall();
 
       const metrics = collector.getMetrics();

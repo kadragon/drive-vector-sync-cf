@@ -111,7 +111,7 @@ class MockKVStateManager {
 
 class MockVectorClient {
   private collectionInfo = {
-    name: 'project_docs',
+    name: 'worknote-store',
     status: 'green',
   };
   private vectorCount = 500;
