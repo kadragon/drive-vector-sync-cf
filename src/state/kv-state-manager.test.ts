@@ -312,7 +312,18 @@ describe('KVStateManager', () => {
       }
 
       const history = await stateManager.getSyncHistory(100);
-      expect(history.length).toBeLessThanOrEqual(30);
+
+      // Should have exactly 30 entries (not more)
+      expect(history.length).toBe(30);
+
+      // Should keep the newest 30 entries (filesProcessed 5-34)
+      // Sorted newest first, so first entry should be filesProcessed=34
+      expect(history[0].filesProcessed).toBe(34);
+      expect(history[29].filesProcessed).toBe(5);
+
+      // Oldest entries (0-4) should be deleted
+      const oldestExist = history.some(h => h.filesProcessed < 5);
+      expect(oldestExist).toBe(false);
     });
   });
 });

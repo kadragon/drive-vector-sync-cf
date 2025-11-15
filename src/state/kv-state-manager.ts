@@ -159,16 +159,22 @@ export class KVStateManager {
     // Save the new entry
     await this.kv.put(key, JSON.stringify(entry));
 
-    // Get all history entries and remove oldest if exceeding max
-    const allEntries = await this.getSyncHistory(MAX_HISTORY_ENTRIES + 10);
+    // Get ALL history keys directly from KV
+    const list = await this.kv.list({ prefix: SYNC_HISTORY_PREFIX });
 
-    if (allEntries.length > MAX_HISTORY_ENTRIES) {
-      // Delete oldest entries
-      const entriesToDelete = allEntries.slice(MAX_HISTORY_ENTRIES);
-      for (const oldEntry of entriesToDelete) {
-        const oldTimestamp = new Date(oldEntry.timestamp).getTime();
-        const oldKey = `${SYNC_HISTORY_PREFIX}${oldTimestamp}`;
-        await this.kv.delete(oldKey);
+    if (list.keys.length > MAX_HISTORY_ENTRIES) {
+      // Sort by timestamp (extract from key name: sync_history_{timestamp})
+      const sortedKeys = list.keys
+        .map(k => ({
+          name: k.name,
+          timestamp: parseInt(k.name.replace(SYNC_HISTORY_PREFIX, ''), 10),
+        }))
+        .sort((a, b) => b.timestamp - a.timestamp); // Newest first
+
+      // Delete oldest entries (beyond MAX_HISTORY_ENTRIES)
+      const keysToDelete = sortedKeys.slice(MAX_HISTORY_ENTRIES);
+      for (const key of keysToDelete) {
+        await this.kv.delete(key.name);
       }
     }
   }
