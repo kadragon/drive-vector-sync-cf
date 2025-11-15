@@ -159,12 +159,21 @@ export class KVStateManager {
     // Save the new entry
     await this.kv.put(key, JSON.stringify(entry));
 
-    // Get ALL history keys directly from KV
-    const list = await this.kv.list({ prefix: SYNC_HISTORY_PREFIX });
+    // Get ALL history keys directly from KV, handling pagination
+    const allKeys = [];
+    let cursor: string | undefined;
+    do {
+      const listResult: KVNamespaceListResult<unknown> = await this.kv.list({
+        prefix: SYNC_HISTORY_PREFIX,
+        cursor,
+      });
+      allKeys.push(...listResult.keys);
+      cursor = listResult.list_complete ? undefined : listResult.cursor;
+    } while (cursor);
 
-    if (list.keys.length > MAX_HISTORY_ENTRIES) {
+    if (allKeys.length > MAX_HISTORY_ENTRIES) {
       // Sort by timestamp (extract from key name: sync_history_{timestamp})
-      const sortedKeys = list.keys
+      const sortedKeys = allKeys
         .map(k => ({
           name: k.name,
           timestamp: parseInt(k.name.replace(SYNC_HISTORY_PREFIX, ''), 10),
@@ -173,9 +182,7 @@ export class KVStateManager {
 
       // Delete oldest entries (beyond MAX_HISTORY_ENTRIES)
       const keysToDelete = sortedKeys.slice(MAX_HISTORY_ENTRIES);
-      for (const key of keysToDelete) {
-        await this.kv.delete(key.name);
-      }
+      await Promise.all(keysToDelete.map(key => this.kv.delete(key.name)));
     }
   }
 
@@ -187,12 +194,22 @@ export class KVStateManager {
   async getSyncHistory(limit: number = 30): Promise<SyncHistoryEntry[]> {
     const entries: SyncHistoryEntry[] = [];
 
-    // List all keys with the sync_history prefix
-    const list = await this.kv.list({ prefix: SYNC_HISTORY_PREFIX });
+    // List all keys with the sync_history prefix, handling pagination
+    const allKeys = [];
+    let cursor: string | undefined;
+    do {
+      const listResult: KVNamespaceListResult<unknown> = await this.kv.list({
+        prefix: SYNC_HISTORY_PREFIX,
+        cursor,
+      });
+      allKeys.push(...listResult.keys);
+      cursor = listResult.list_complete ? undefined : listResult.cursor;
+    } while (cursor);
 
-    // Fetch all history entries
-    for (const key of list.keys) {
-      const entryJson = await this.kv.get(key.name, 'json');
+    // Fetch all history entries in parallel
+    const allEntryJsons = await Promise.all(allKeys.map(key => this.kv.get(key.name, 'json')));
+
+    for (const entryJson of allEntryJsons) {
       if (entryJson) {
         entries.push(entryJson as SyncHistoryEntry);
       }

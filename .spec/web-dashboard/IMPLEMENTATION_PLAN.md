@@ -532,7 +532,7 @@ function getContentType(pathname: string): string {
 #### 4.3 Asset Bundling Strategy
 
 **Option A: Vite Plugin (Recommended)**
-Create a Vite plugin to generate asset map:
+Create a Vite plugin to generate asset map with Base64 encoding for binary assets:
 
 **`frontend/vite-plugin-asset-map.ts`:**
 ```ts
@@ -543,7 +543,22 @@ export function assetMapPlugin() {
       const assetMap = {};
       for (const [fileName, asset] of Object.entries(bundle)) {
         if (asset.type === 'asset') {
-          assetMap[`/assets/${fileName}`] = asset.source;
+          // Handle both string and binary (Uint8Array) assets
+          let encodedSource: string;
+          let isBinary = false;
+
+          if (typeof asset.source === 'string') {
+            encodedSource = asset.source;
+          } else {
+            // Binary asset (Uint8Array) - encode as Base64
+            encodedSource = Buffer.from(asset.source).toString('base64');
+            isBinary = true;
+          }
+
+          assetMap[`/assets/${fileName}`] = {
+            content: encodedSource,
+            isBinary,
+          };
         }
       }
       // Write asset map to JSON file
@@ -561,8 +576,21 @@ Import in Worker:
 ```ts
 import assetMap from '../frontend/dist/asset-map.json';
 
-function getAssetContent(pathname: string): string | null {
-  return assetMap[pathname] || null;
+function getAssetContent(pathname: string): string | Uint8Array | null {
+  const asset = assetMap[pathname];
+  if (!asset) return null;
+
+  // Decode Base64 for binary assets
+  if (asset.isBinary) {
+    const binaryString = atob(asset.content);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+  }
+
+  return asset.content;
 }
 ```
 
