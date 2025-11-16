@@ -166,7 +166,7 @@ export class DriveClient {
     let count = 0;
 
     try {
-      await this.countFilesInFolder(rootFolderId, (fileCount) => {
+      await this.countFilesInFolder(rootFolderId, fileCount => {
         count += fileCount;
       });
       return count;
@@ -186,6 +186,7 @@ export class DriveClient {
     onCount: (count: number) => void
   ): Promise<void> {
     let pageToken: string | undefined;
+    const subfolders: string[] = [];
 
     do {
       const response = await withRetry(async () => {
@@ -193,39 +194,36 @@ export class DriveClient {
           q: `'${folderId}' in parents and trashed=false`,
           pageToken,
           fields: 'nextPageToken, files(id, name, mimeType)',
-          pageSize: 100,
+          pageSize: 1000, // Use max page size for efficiency
         });
       });
 
       const items = response.data.files || [];
-      let fileCount = 0;
-
-      const subfolders: string[] = [];
+      let fileCountOnPage = 0;
 
       for (const item of items) {
         if (!item.id || !item.name) continue;
 
         if (item.mimeType === 'application/vnd.google-apps.folder') {
-          // Collect subfolder IDs for recursive counting
           subfolders.push(item.id);
         } else if (this.isSupportedFile(item.name, item.mimeType)) {
-          // Count supported files (markdown or PDF)
-          fileCount++;
+          fileCountOnPage++;
         }
       }
 
-      // Report count for this page
-      if (fileCount > 0) {
-        onCount(fileCount);
-      }
-
-      // Recursively count subfolders
-      for (const subfolderId of subfolders) {
-        await this.countFilesInFolder(subfolderId, onCount);
+      if (fileCountOnPage > 0) {
+        onCount(fileCountOnPage);
       }
 
       pageToken = response.data.nextPageToken || undefined;
     } while (pageToken);
+
+    // After collecting all subfolders, recurse in parallel
+    if (subfolders.length > 0) {
+      await Promise.all(
+        subfolders.map(subfolderId => this.countFilesInFolder(subfolderId, onCount))
+      );
+    }
   }
 
   /**
