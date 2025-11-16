@@ -6,13 +6,8 @@
  *   task_id: TASK-035
  */
 
-import {
-  createRemoteJWKSet,
-  createLocalJWKSet,
-  jwtVerify,
-  JWTPayload,
-  JSONWebKeySet,
-} from 'jose';
+import { createRemoteJWKSet, createLocalJWKSet, jwtVerify, JWTPayload, JSONWebKeySet } from 'jose';
+import { buildCorsHeaders } from '../utils/cors.js';
 
 type JWKS = JSONWebKeySet;
 
@@ -82,9 +77,7 @@ export async function requireAccessJwt(
   const issuer = buildIssuer(env.CF_ACCESS_TEAM_DOMAIN);
   const audience = env.CF_ACCESS_AUD_TAG;
 
-  const jwks = options?.jwks
-    ? createLocalJWKSet(options.jwks)
-    : getJwks(env.CF_ACCESS_TEAM_DOMAIN);
+  const jwks = options?.jwks ? createLocalJWKSet(options.jwks) : getJwks(env.CF_ACCESS_TEAM_DOMAIN);
 
   try {
     const result = await jwtVerify(token, jwks, {
@@ -99,9 +92,12 @@ export async function requireAccessJwt(
   }
 }
 
-export function unauthorizedResponse(message: string): Response {
+export function unauthorizedResponse(message: string, request: Request): Response {
   return new Response(JSON.stringify({ error: 'Unauthorized', message }), {
     status: 401,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...buildCorsHeaders(request),
+    },
   });
 }

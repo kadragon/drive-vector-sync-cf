@@ -2,6 +2,27 @@
 # Tasks are moved here when completed
 
 completed_tasks:
+  - task_id: TASK-034
+    spec_id: SPEC-embedding-pipeline-1
+    title: "Integrate Cloudflare AI Gateway for all OpenAI Calls"
+    completed_at: "2025-11-16T07:15:00Z"
+    duration: "2.5 hours"
+    outcome: "Successfully integrated Cloudflare AI Gateway support for all OpenAI API calls with optional routing, caching, rate limiting, and analytics."
+    tests_passed:
+      - Backend: 271/271 tests passed
+      - Added 7 new tests for openai-factory.ts
+      - Added 3 new tests for EmbeddingClient configuration
+    notes: |
+      - Created src/openai/openai-factory.ts with createOpenAIClient() factory function
+      - Updated EmbeddingClient to accept pre-configured OpenAI client via 'client' parameter
+      - Added CF_ACCOUNT_ID and CF_AI_GATEWAY_NAME optional secrets to Env interface
+      - Factory routes API calls through gateway when both secrets configured
+      - Maintains backward compatibility: falls back to direct OpenAI API when not configured
+      - Updated README.md with comprehensive AI Gateway setup documentation
+      - Updated wrangler.toml and .governance/env.yaml with new configuration
+      - Benefits: cost reduction via caching, rate limiting, usage analytics, improved resilience
+      - Factory pattern enables future extension to other OpenAI endpoints
+
   - task_id: TASK-036
     spec_id: SPEC-embedding-pipeline-1
     title: "Align embedding dimensions with Vectorize limit"

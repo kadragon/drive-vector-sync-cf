@@ -20,17 +20,6 @@ tasks:
     notes: |
       Paused awaiting Zero Trust rollout; health/dashboard already live at work.kadragon.work/*.
 
-  - task_id: TASK-034
-    spec_id: SPEC-embedding-pipeline-1
-    title: "Integrate Cloudflare AI Gateway for all OpenAI Calls"
-    priority: 2
-    status: pending
-    dependencies: []
-    estimated_effort: 2.5 hours
-    description: |
-      Refactor the OpenAI client initialization to create a centralized, reusable factory. This will route all OpenAI API calls (current embedding, future chat, etc.) through Cloudflare's AI Gateway for improved caching, rate limiting, and analytics.
-    # ... (rest of the task description)
-
   - task_id: TASK-033
     spec_id: null
     title: "Refactor folder structure: rename src/ to worker/"

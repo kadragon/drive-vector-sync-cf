@@ -10,11 +10,7 @@ export class ApiError extends Error {
   status?: number;
   code?: string;
 
-  constructor(
-    message: string,
-    status?: number,
-    code?: string
-  ) {
+  constructor(message: string, status?: number, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
@@ -29,6 +25,7 @@ export async function fetchJson<T>(
 ): Promise<T> {
   const mergedInit: RequestInit = {
     ...init,
+    credentials: 'include', // Include cookies for Cloudflare Access authentication
     headers: {
       Accept: 'application/json',
       ...(init?.headers || {}),
@@ -97,7 +94,11 @@ export async function fetchJson<T>(
   } catch (err) {
     // Handle network errors
     if (err instanceof TypeError) {
-      throw new ApiError('Network error. Please check your connection.', undefined, 'NETWORK_ERROR');
+      throw new ApiError(
+        'Network error. Please check your connection.',
+        undefined,
+        'NETWORK_ERROR'
+      );
     }
 
     // Handle abort errors
@@ -111,6 +112,10 @@ export async function fetchJson<T>(
     }
 
     // Handle unknown errors
-    throw new ApiError((err as Error).message || 'An unexpected error occurred', undefined, 'UNKNOWN_ERROR');
+    throw new ApiError(
+      (err as Error).message || 'An unexpected error occurred',
+      undefined,
+      'UNKNOWN_ERROR'
+    );
   }
 }

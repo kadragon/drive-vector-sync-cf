@@ -47,6 +47,41 @@
 
 ## Recent Accomplishments
 
+### 2025-11-16: Cloudflare AI Gateway Integration (TASK-034) ✅
+
+**Achievement**: Integrated Cloudflare AI Gateway support for all OpenAI API calls, providing optional routing for improved caching, rate limiting, and analytics.
+
+**Implementation**:
+- Created `src/openai/openai-factory.ts` with `createOpenAIClient()` factory function
+- Updated `EmbeddingClient` to accept pre-configured OpenAI client instances via `client` parameter
+- Added optional `CF_ACCOUNT_ID` and `CF_AI_GATEWAY_NAME` secrets to environment configuration
+- Factory automatically routes API calls through `https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_name}/openai` when both secrets are configured
+- Maintains backward compatibility: falls back to direct OpenAI API when secrets not set
+
+**Testing**:
+- Added 7 unit tests for `openai-factory.ts` (constructor mocking, URL building, config validation)
+- Added 3 unit tests for `EmbeddingClient` configuration options (client parameter, error handling)
+- All 271 tests passing (no regressions)
+- `npm exec vitest run src/**/*.test.ts`
+
+**Documentation**:
+- Updated README.md with AI Gateway setup section (benefits, step-by-step configuration)
+- Updated wrangler.toml comments to document new optional secrets
+- Updated .governance/env.yaml to reflect AI Gateway configuration
+
+**Benefits**:
+- **Cost Reduction**: Caching of identical embedding requests reduces API costs
+- **Rate Limiting**: Protection against API abuse
+- **Analytics**: Usage tracking in Cloudflare dashboard
+- **Resilience**: Automatic retries and failover
+- **Optional**: No impact on deployments that don't configure AI Gateway
+
+**Technical Notes**:
+- OpenAI client baseURL is set to gateway endpoint when both `cfAccountId` and `cfGatewayName` are provided
+- Console logs indicate whether using AI Gateway or direct OpenAI API
+- EmbeddingConfig now supports both `client` (recommended) and `apiKey` (legacy) parameters
+- Factory pattern enables future extension to other OpenAI endpoints (chat, etc.)
+
 ### 2025-11-16: CF_Authorization Cookie Hardening (TASK-037) ✅
 
 **Achievement**: Ensured Cloudflare Access JWT extraction from cookies doesn't truncate tokens containing '=' characters by slicing after the known prefix.
@@ -765,6 +800,14 @@ Build Verification:
   - Production deployment: ~3 hours (TASK-021)
   - Web dashboard UI: ~10 hours (TASK-030 ~ TASK-032)
 - **Cost Optimization:** 80-90% reduction in embedding API calls for updates + eliminated Qdrant Cloud costs
+
+### 2025-11-16: Wrangler.toml Build Warning Resolution ✅
+
+**Achievement**: Resolved build warnings by explicitly setting `workers_dev = false` and `preview_urls = false` in `wrangler.toml`.
+
+**Impact**: Prevents default enablement of workers.dev and preview URLs, ensuring consistent deployment behavior and silencing build warnings.
+
+---
 
 ### 2025-11-16: Coverage Snapshot & Gaps (TASK-021) 📈
 Trace: { spec_id: SPEC-deployment-1, task_id: TASK-021 }

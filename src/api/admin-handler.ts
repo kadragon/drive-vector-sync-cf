@@ -10,6 +10,7 @@ import { SyncOrchestrator } from '../sync/sync-orchestrator.js';
 import { KVStateManager } from '../state/kv-state-manager.js';
 import { VectorStoreClient } from '../types/vector-store.js';
 import { getNextCronExecution, getCronSchedule } from '../utils/cron.js';
+import { buildCorsHeaders } from '../utils/cors.js';
 
 /**
  * Admin API request handler
@@ -19,7 +20,8 @@ export class AdminHandler {
     private orchestrator: SyncOrchestrator,
     private stateManager: KVStateManager,
     private vectorClient: VectorStoreClient,
-    private rootFolderId: string
+    private rootFolderId: string,
+    private request: Request
   ) {}
 
   /**
@@ -156,13 +158,14 @@ export class AdminHandler {
   }
 
   /**
-   * Create JSON response
+   * Create JSON response with CORS headers
    */
   private jsonResponse(data: unknown, status: number = 200): Response {
     return new Response(JSON.stringify(data, null, 2), {
       status,
       headers: {
         'Content-Type': 'application/json',
+        ...buildCorsHeaders(this.request),
       },
     });
   }

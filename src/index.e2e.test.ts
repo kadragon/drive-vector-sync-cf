@@ -67,7 +67,7 @@ vi.mock('./auth/zt-validator.js', () => {
       }
       return {};
     }),
-    unauthorizedResponse: (message: string) =>
+    unauthorizedResponse: (message: string, _request: Request) =>
       new Response(JSON.stringify({ error: 'Unauthorized', message }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },

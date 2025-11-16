@@ -19,6 +19,8 @@ import { AdminHandler } from './api/admin-handler.js';
 import { requireAccessJwt, unauthorizedResponse } from './auth/zt-validator.js';
 import { logError } from './errors/index.js';
 import { resolveAssetPath, serveStaticAsset } from './static/server.js';
+import { createOpenAIClient } from './openai/openai-factory.js';
+import { buildCorsHeaders } from './utils/cors.js';
 import type { VectorizeIndex } from './types/vectorize.js';
 
 export interface Env {
@@ -36,6 +38,10 @@ export interface Env {
   OPENAI_API_KEY: string;
   CF_ACCESS_TEAM_DOMAIN: string;
   CF_ACCESS_AUD_TAG: string;
+  // Optional: Cloudflare AI Gateway configuration
+  CF_ACCOUNT_ID?: string;
+  CF_AI_GATEWAY_NAME?: string;
+  CF_AI_GATEWAY_TOKEN?: string;
 
   // Environment variables
   CHUNK_SIZE: string;
@@ -56,15 +62,23 @@ export type { VectorizeIndex };
 /**
  * Initialize all clients and orchestrator
  */
-function initializeServices(env: Env) {
+function initializeServices(env: Env, request: Request) {
   // Initialize Drive client with Service Account
   const driveClient = DriveClient.fromJSON(
     env.GOOGLE_SERVICE_ACCOUNT_JSON,
     env.GOOGLE_IMPERSONATION_EMAIL
   );
 
-  const embeddingClient = new EmbeddingClient({
+  // Create OpenAI client with optional AI Gateway routing
+  const openaiClient = createOpenAIClient({
     apiKey: env.OPENAI_API_KEY,
+    cfAccountId: env.CF_ACCOUNT_ID,
+    cfGatewayName: env.CF_AI_GATEWAY_NAME,
+    cfGatewayToken: env.CF_AI_GATEWAY_TOKEN,
+  });
+
+  const embeddingClient = new EmbeddingClient({
+    client: openaiClient,
   });
 
   // Vector store client - Cloudflare Vectorize
@@ -98,7 +112,8 @@ function initializeServices(env: Env) {
     orchestrator,
     stateManager,
     vectorClient,
-    env.GOOGLE_ROOT_FOLDER_ID
+    env.GOOGLE_ROOT_FOLDER_ID,
+    request
   );
 
   return {
@@ -118,7 +133,9 @@ export default {
   async scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
     console.log('Scheduled sync triggered at:', new Date(event.scheduledTime).toISOString());
 
-    const { orchestrator, stateManager } = initializeServices(env);
+    // Scheduled tasks don't have a request, so we create a dummy one for service initialization
+    const dummyRequest = new Request('http://localhost');
+    const { orchestrator, stateManager } = initializeServices(env, dummyRequest);
 
     try {
       // 1. Check for concurrent execution
@@ -150,10 +167,24 @@ export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
+    // CORS headers for all responses (reflects request origin when present)
+    const corsHeaders = buildCorsHeaders(request);
+
+    // Handle CORS preflight requests
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: corsHeaders,
+      });
+    }
+
     // Health check endpoint
     if (url.pathname === '/health') {
       return new Response(JSON.stringify({ status: 'ok' }), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders,
+        },
       });
     }
 
@@ -168,17 +199,20 @@ export default {
       try {
         await requireAccessJwt(request, env);
       } catch (error) {
-        return unauthorizedResponse((error as Error).message);
+        return unauthorizedResponse((error as Error).message, request);
       }
 
       // Handle admin API requests
-      const { adminHandler } = initializeServices(env);
+      const { adminHandler } = initializeServices(env, request);
       return await adminHandler.handleRequest(request);
     }
 
     return new Response(JSON.stringify({ error: 'Not found' }), {
       status: 404,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders,
+      },
     });
   },
 };
