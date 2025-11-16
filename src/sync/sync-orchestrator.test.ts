@@ -66,8 +66,8 @@ class MockEmbeddingClient {
   }
 
   async embedWithBatching(_texts: string[], _batchSize: number): Promise<number[][]> {
-    // Return mock embeddings (3072 dimensions)
-    return this.embeddings.length > 0 ? this.embeddings : _texts.map(() => Array(3072).fill(0.1));
+    // Return mock embeddings (1536 dimensions)
+    return this.embeddings.length > 0 ? this.embeddings : _texts.map(() => Array(1536).fill(0.1));
   }
 }
 
@@ -475,7 +475,7 @@ describe('SyncOrchestrator', () => {
       const existingVectors: VectorPoint[] = [
         {
           id: 'file1_0',
-          vector: Array(3072).fill(0.5),
+          vector: Array(1536).fill(0.5),
           payload: {
             file_id: 'file1',
             file_name: 'test.md',
@@ -566,7 +566,7 @@ describe('SyncOrchestrator', () => {
       const existingVectors: VectorPoint[] = [
         {
           id: 'file1_0',
-          vector: Array(3072).fill(0.5),
+          vector: Array(1536).fill(0.5),
           payload: {
             file_id: 'file1',
             file_name: 'shrinking.md',
@@ -579,7 +579,7 @@ describe('SyncOrchestrator', () => {
         },
         {
           id: 'file1_1',
-          vector: Array(3072).fill(0.5),
+          vector: Array(1536).fill(0.5),
           payload: {
             file_id: 'file1',
             file_name: 'shrinking.md',
@@ -592,7 +592,7 @@ describe('SyncOrchestrator', () => {
         },
         {
           id: 'file1_2',
-          vector: Array(3072).fill(0.5),
+          vector: Array(1536).fill(0.5),
           payload: {
             file_id: 'file1',
             file_name: 'shrinking.md',

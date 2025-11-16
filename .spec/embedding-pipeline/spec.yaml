@@ -1,6 +1,6 @@
 spec_id: SPEC-embedding-pipeline-1
 title: "OpenAI Embedding Pipeline"
-description: "Process text documents through OpenAI text-embedding-3-large model with intelligent chunking"
+description: "Process text documents through OpenAI text-embedding-3-small model (1536 dimensions) with intelligent chunking"
 
 given_when_then:
   - given: "A Markdown file content under token limit (2000 tokens)"
@@ -17,7 +17,7 @@ given_when_then:
 
   - given: "OpenAI API returns embeddings"
     when: "System receives response"
-    then: "3072-dimensional vectors should be extracted and validated"
+    then: "1536-dimensional vectors should be extracted and validated"
 
   - given: "Embedding request fails"
     when: "System encounters error"
@@ -34,7 +34,7 @@ acceptance_tests:
     desc: "Batch embed 16-32 chunks in single API call"
 
   - id: TEST-embedding-pipeline-4
-    desc: "Validate embedding vector dimensions (3072)"
+    desc: "Validate embedding vector dimensions (1536)"
 
   - id: TEST-embedding-pipeline-5
     desc: "Handle embedding API errors gracefully"

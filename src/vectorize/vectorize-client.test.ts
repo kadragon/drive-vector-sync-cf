@@ -57,7 +57,7 @@ describe('VectorizeClient', () => {
       const vectors: VectorPoint[] = [
         {
           id: 'file1_0',
-          vector: new Array(3072).fill(0.1),
+          vector: new Array(1536).fill(0.1),
           payload: {
             file_id: 'file1',
             file_name: 'test.txt',
@@ -69,7 +69,7 @@ describe('VectorizeClient', () => {
         },
         {
           id: 'file1_1',
-          vector: new Array(3072).fill(0.2),
+          vector: new Array(1536).fill(0.2),
           payload: {
             file_id: 'file1',
             file_name: 'test.txt',
@@ -101,7 +101,7 @@ describe('VectorizeClient', () => {
       const vectors: VectorPoint[] = [
         {
           id: 'file1_0',
-          vector: new Array(3072).fill(0.1),
+          vector: new Array(1536).fill(0.1),
           payload: {
             file_id: 'file1',
             file_name: 'test.txt',
@@ -113,7 +113,7 @@ describe('VectorizeClient', () => {
         },
         {
           id: 'file1_1',
-          vector: new Array(3072).fill(0.2),
+          vector: new Array(1536).fill(0.2),
           payload: {
             file_id: 'file1',
             file_name: 'test.txt',
@@ -150,7 +150,7 @@ describe('VectorizeClient', () => {
         // Existing vector (should not increment)
         {
           id: 'file1_0',
-          vector: new Array(3072).fill(0.1),
+          vector: new Array(1536).fill(0.1),
           payload: {
             file_id: 'file1',
             file_name: 'test.txt',
@@ -163,7 +163,7 @@ describe('VectorizeClient', () => {
         // Existing vector (should not increment)
         {
           id: 'file1_1',
-          vector: new Array(3072).fill(0.2),
+          vector: new Array(1536).fill(0.2),
           payload: {
             file_id: 'file1',
             file_name: 'test.txt',
@@ -176,7 +176,7 @@ describe('VectorizeClient', () => {
         // New vector (should increment by 1)
         {
           id: 'file1_2',
-          vector: new Array(3072).fill(0.3),
+          vector: new Array(1536).fill(0.3),
           payload: {
             file_id: 'file1',
             file_name: 'test.txt',
@@ -213,7 +213,7 @@ describe('VectorizeClient', () => {
         // file1: existing vector
         {
           id: 'file1_0',
-          vector: new Array(3072).fill(0.1),
+          vector: new Array(1536).fill(0.1),
           payload: {
             file_id: 'file1',
             file_name: 'test1.txt',
@@ -226,7 +226,7 @@ describe('VectorizeClient', () => {
         // file1: new vector
         {
           id: 'file1_2',
-          vector: new Array(3072).fill(0.3),
+          vector: new Array(1536).fill(0.3),
           payload: {
             file_id: 'file1',
             file_name: 'test1.txt',
@@ -239,7 +239,7 @@ describe('VectorizeClient', () => {
         // file2: new vectors
         {
           id: 'file2_0',
-          vector: new Array(3072).fill(0.4),
+          vector: new Array(1536).fill(0.4),
           payload: {
             file_id: 'file2',
             file_name: 'test2.txt',
@@ -251,7 +251,7 @@ describe('VectorizeClient', () => {
         },
         {
           id: 'file2_1',
-          vector: new Array(3072).fill(0.5),
+          vector: new Array(1536).fill(0.5),
           payload: {
             file_id: 'file2',
             file_name: 'test2.txt',

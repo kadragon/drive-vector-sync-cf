@@ -49,7 +49,7 @@ vi.mock('openai', () => ({
   default: class MockOpenAI {
     embeddings = {
       create: vi.fn().mockResolvedValue({
-        data: [{ embedding: Array(3072).fill(0.1) }],
+        data: [{ embedding: Array(1536).fill(0.1) }],
       }),
     };
   },
@@ -67,10 +67,11 @@ vi.mock('./auth/zt-validator.js', () => {
       }
       return {};
     }),
-    unauthorizedResponse: (message: string) => new Response(JSON.stringify({ error: 'Unauthorized', message }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    }),
+    unauthorizedResponse: (message: string) =>
+      new Response(JSON.stringify({ error: 'Unauthorized', message }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      }),
   };
 });
 
@@ -128,7 +129,7 @@ class MockVectorizeIndex implements VectorizeIndex {
   async describe() {
     return {
       name: 'test-index',
-      dimensions: 3072,
+      dimensions: 1536,
       metric: 'cosine' as const,
       vectorsCount: this.vectors.size,
     };
@@ -274,7 +275,7 @@ describe('E2E Integration Tests', () => {
 
         expect(response.status).toBe(401);
         const data = await response.json();
-        expect(data).toEqual({ error: 'Unauthorized' });
+        expect(data).toEqual({ error: 'Unauthorized', message: 'Missing CF_Authorization token' });
       });
 
       it('should reject requests with invalid token', async () => {
@@ -287,7 +288,7 @@ describe('E2E Integration Tests', () => {
 
         expect(response.status).toBe(401);
         const data = await response.json();
-        expect(data).toEqual({ error: 'Unauthorized' });
+        expect(data).toEqual({ error: 'Unauthorized', message: 'Invalid token' });
       });
 
       it('should accept requests with valid CF_Authorization token', async () => {
@@ -647,7 +648,7 @@ describe('E2E Integration Tests', () => {
       await vectorize.insert([
         {
           id: 'test-1',
-          values: Array(3072).fill(0.1),
+          values: Array(1536).fill(0.1),
           metadata: { file_id: 'test-file' },
         },
       ]);

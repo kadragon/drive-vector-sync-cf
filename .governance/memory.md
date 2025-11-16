@@ -11,7 +11,7 @@
 ### Core Components
 1. **Cloudflare Workers** - Serverless execution environment
 2. **Google Drive API** - Source document repository
-3. **OpenAI Embedding API** - text-embedding-3-large model (3072 dimensions)
+3. **OpenAI Embedding API** - text-embedding-3-small model (1536 dimensions)
 4. **Cloudflare Vectorize** - Vector index storage (cosine distance, built-in)
 5. **Cloudflare KV** - State persistence (startPageToken, sync metadata, file-to-vector mapping)
 
@@ -220,7 +220,7 @@
 - tiktoken-based token counting (cl100k_base)
 - Text chunking at 2000 token boundaries
 - SHA-256 chunk hashing for content deduplication
-- OpenAI text-embedding-3-large integration
+- OpenAI text-embedding-3-small integration (1536 dimensions)
 - Batch processing with configurable batch size
 - Incremental optimization: reuses embeddings for unchanged chunks
 - **Tests:** 24 passing (17 chunking + 7 hash)
@@ -461,7 +461,7 @@
    - (Optional) Enable domain-wide delegation for user impersonation
 
 2. **OpenAI**
-   - ✅ Get API key for text-embedding-3-large
+   - ✅ Get API key for text-embedding-3-small (1536 dimensions)
 
 3. **Cloudflare**
    - 🔄 Create Vectorize index (`wrangler vectorize create`)
@@ -802,3 +802,45 @@ Trace: { spec_id: SPEC-security-zt-1, task_id: TASK-035 }
 - Dependencies added to enable coverage reports:
   - Root dev: `@vitest/coverage-v8` (aligned with Vitest 4).
   - Frontend dev: `@vitest/coverage-v8@2.1.9` (aligned with Vitest 2 workspace).
+
+### 2025-11-16: Embedding Dimension Alignment (TASK-036) ✅
+Trace: { spec_id: SPEC-embedding-pipeline-1, task_id: TASK-036 }
+
+**Achievement**: Aligned all code, tests, and documentation to use 1536 dimensions to match Cloudflare Vectorize's maximum supported dimension limit.
+
+**Changes Made**:
+1. Updated `.spec/embedding-pipeline/spec.yaml` to reference 1536 dimensions (was 3072)
+2. Updated `.governance/env.yaml` model config:
+   - model: text-embedding-3-small (was text-embedding-3-large)
+   - dimensions: 1536 (was 3072)
+   - vector_size: 1536 (was 3072)
+3. Updated all test files to use Array(1536) instead of Array(3072):
+   - src/index.e2e.test.ts (3 occurrences)
+   - src/vectorize/vectorize-client.test.ts (9 occurrences)
+   - src/sync/sync-orchestrator.test.ts (4 occurrences)
+4. Updated src/vectorize/vectorize-client.ts:
+   - initializeCollection default parameter: 1536 (was 3072)
+   - Comments and error messages updated
+   - getCollectionInfo mock size: 1536 (was 3072)
+5. Updated README.md:
+   - wrangler vectorize create commands: --dimensions=1536 (was 3072)
+   - API response examples: dimensions: 1536 (was 3072)
+   - Cost tracking: Updated to text-embedding-3-small pricing ($0.00002 vs $0.00013)
+6. Updated .governance/memory.md to reflect text-embedding-3-small model
+
+**Technical Notes**:
+- EmbeddingClient already had DEFAULT_DIMENSIONS = 1536, so no code changes needed there
+- OpenAI's text-embedding-3-small natively outputs 1536 dimensions
+- Cloudflare Vectorize enforces a maximum of 1536 dimensions (range: 32-1536)
+- The production Vectorize index was already recreated at 1536 dimensions during TASK-021
+- Cost benefit: text-embedding-3-small is 6.5x cheaper than text-embedding-3-large
+
+**Testing**:
+- Backend tests: 259/261 passed (2 pre-existing auth test failures unrelated to this task)
+- All embedding, vectorize, and dimension-related tests passing
+- No regressions introduced
+
+**Impact**:
+- Eliminates dimension mismatch error when creating new Vectorize indexes
+- Reduces embedding costs by 6.5x (from $0.00013 to $0.00002 per 1K tokens)
+- All documentation now accurately reflects production configuration

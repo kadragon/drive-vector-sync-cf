@@ -230,7 +230,7 @@ Create the vector index for storing embeddings:
 
 ```bash
 wrangler vectorize create worknote-store \
-  --dimensions=3072 \
+  --dimensions=1536 \
   --metric=cosine
 ```
 
@@ -238,7 +238,7 @@ Expected output:
 
 ```text
 ✅ Successfully created index 'worknote-store'
-📋 Dimensions: 3072
+📋 Dimensions: 1536
 📏 Metric: cosine
 ```
 
@@ -592,7 +592,7 @@ Returns vector index statistics.
 {
   "indexName": "worknote-store",
   "vectorCount": 250,
-  "dimensions": 3072
+  "dimensions": 1536
 }
 ```
 
@@ -719,7 +719,7 @@ wrangler tail --search "sync"
 
 The system logs API costs to console:
 
-- **OpenAI**: $0.00013 per 1K tokens (text-embedding-3-large)
+- **OpenAI**: $0.00002 per 1K tokens (text-embedding-3-small, 1536 dimensions)
 - **Drive API**: Quota usage tracking
 - **Vectorize**: Included with Workers plan
 
@@ -771,7 +771,7 @@ wrangler tail --status error
 
 ```bash
 wrangler vectorize create worknote-store \
-    --dimensions=3072 \
+    --dimensions=1536 \
  --metric=cosine
 ```
 
