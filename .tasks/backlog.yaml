@@ -2,43 +2,56 @@
 # Remaining pending tasks sorted by priority
 
 tasks:
+  - task_id: TASK-035
+    spec_id: SPEC-security-zt-1
+    title: "Implement Cloudflare Zero Trust Access for UI and API"
+    priority: 1
+    status: pending
+    dependencies: []
+    estimated_effort: 4 hours
+    description: |
+      Secure the entire application by replacing the static token authentication with Cloudflare Zero Trust Access. This involves validating a JWT from Cloudflare to authorize requests to both the frontend and the backend API.
+
+      **Part 1: Manual Cloudflare Configuration (User Task)**
+      1.  **Setup Identity Provider:** Configure an IdP (e.g., Google, GitHub) in the Zero Trust dashboard.
+      2.  **Create Access Application:** Create a "Self-hosted" application, defining the domain to protect.
+      3.  **Create Access Policy:** Define rules for who can access the application.
+      4.  **Enable API JWT:** In the application's settings, enable "App-to-App API access" and note the **Audience (AUD) Tag**.
+
+      **Part 2: Worker Implementation (Agent Task)**
+      1.  **Add Secrets:** Define two new secrets for the worker:
+          - `CF_ACCESS_TEAM_DOMAIN`: Your Cloudflare team domain (e.g., `your-team.cloudflareaccess.com`).
+          - `CF_ACCESS_AUD_TAG`: The Audience (AUD) Tag from the Access Application settings.
+      2.  **Implement JWT Validation Middleware:**
+          - Create a new module `src/auth/zt-validator.ts`.
+          - This module will export a middleware function that:
+            a. Extracts the `CF_Authorization` JWT from request headers.
+            b. Fetches the public signing keys from `https://{CF_ACCESS_TEAM_DOMAIN}/cdn-cgi/access/certs`.
+            c. Uses the `jose` library to verify the JWT's signature, issuer, and audience (`aud` claim).
+      3.  **Integrate Middleware:**
+          - Apply the JWT validation middleware to all protected API routes (e.g., in `src/api/admin-handler.ts` and `src/index.ts`).
+          - Replace the old `ADMIN_TOKEN` check with this new middleware.
+      4.  **Deprecate Old Token:**
+          - Once verified, remove the `ADMIN_TOKEN` logic, secret, and documentation.
+      5.  **Update Documentation:**
+          - Update `README.md` with instructions for setting up Cloudflare Zero Trust for authentication.
+    test_refs:
+      - "TEST-zt-auth-1"
+      - "TEST-zt-auth-2"
+      - "TEST-zt-auth-3"
+    notes: |
+      This change fundamentally improves the security posture of the application, moving from a shared static secret to per-user, identity-based, short-lived credentials managed by Cloudflare.
+
   - task_id: TASK-034
     spec_id: SPEC-embedding-pipeline-1
-    title: "Integrate Cloudflare AI Gateway for OpenAI Calls"
+    title: "Integrate Cloudflare AI Gateway for all OpenAI Calls"
     priority: 2
     status: pending
     dependencies: []
-    estimated_effort: 2 hours
+    estimated_effort: 2.5 hours
     description: |
-      Modify the application to route OpenAI API calls through Cloudflare's AI Gateway for improved caching, rate limiting, and analytics.
-
-      **Plan:**
-
-      1.  **Cloudflare Configuration (Manual):**
-          - The user must create an AI Gateway in the Cloudflare dashboard to get a unique endpoint URL.
-
-      2.  **Add New Secret:**
-          - The AI Gateway endpoint URL must be stored as a new secret named `AI_GATEWAY_URL` in the worker's environment.
-
-      3.  **Code Implementation:**
-          - **`src/embedding/embedding-client.ts`**:
-            - Add an optional `baseURL?: string` property to the `EmbeddingConfig` interface.
-            - In the `EmbeddingClient` constructor, pass the `baseURL` to the `OpenAI` client if it is provided.
-          - **`src/index.ts` (or relevant service initiator):**
-            - Read the `AI_GATEWAY_URL` secret from the environment bindings.
-            - When instantiating `EmbeddingClient`, pass the `AI_GATEWAY_URL` value as the `baseURL`.
-            - Ensure fallback to the default OpenAI endpoint if the secret is not set.
-
-      4.  **Documentation:**
-          - Update `README.md` and the comments in `wrangler.toml` to document the new, optional `AI_GATEWAY_URL` secret.
-    test_refs:
-      - "Create a new test to verify the OpenAI client is initialized with the correct baseURL when the AI_GATEWAY_URL is set."
-    notes: |
-      **Benefits:**
-      - **Caching:** Reduces costs and latency for repeated queries.
-      - **Rate Limiting:** Protects the OpenAI API key and manages costs.
-      - **Analytics:** Provides insights into API usage and performance.
-      - **Security:** Centralizes API key management and access control.
+      Refactor the OpenAI client initialization to create a centralized, reusable factory. This will route all OpenAI API calls (current embedding, future chat, etc.) through Cloudflare's AI Gateway for improved caching, rate limiting, and analytics.
+    # ... (rest of the task description)
 
   - task_id: TASK-033
     spec_id: null
@@ -49,44 +62,5 @@ tasks:
       - TASK-032
     estimated_effort: 1.5 hours
     description: |
-      Refactor project folder structure for clarity:
-
-      Current structure:
-        drive-vector-sync-cf/
-        ├── src/              # Worker backend (ambiguous name)
-        ├── frontend/         # React app
-        └── package.json
-
-      Target structure:
-        drive-vector-sync-cf/
-        ├── worker/           # Worker backend (clear purpose)
-        ├── frontend/         # React app
-        └── package.json
-
-      Steps:
-      1. Rename src/ directory to worker/
-      2. Update wrangler.toml:
-         - Change main = "src/index.ts" → "worker/index.ts"
-      3. Update tsconfig.json:
-         - Change "include": ["src/**/*"] → ["worker/**/*"]
-      4. Update all import paths:
-         - Find all "from 'src/*'" → "from 'worker/*'"
-         - Update relative imports in test files
-      5. Update package.json scripts if needed
-      6. Run all tests to verify (267 tests should pass)
-      7. Update .gitignore if needed
-      8. Update documentation references to src/
-    test_refs: []
-    notes: |
-      Benefits:
-      - Clear separation: worker/ = Cloudflare Workers, frontend/ = React
-      - Better developer experience
-      - Easier onboarding for new contributors
-      - Consistent with industry practices
-
-      Risk mitigation:
-      - Run full test suite after refactor
-      - Verify wrangler dev still works
-      - Check all import paths resolved correctly
-
-      Should be done before production deployment for clean structure.
+      Refactor project folder structure for clarity.
+    # ... (rest of the task description)

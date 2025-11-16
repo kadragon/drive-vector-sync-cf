@@ -1,0 +1,52 @@
+spec_id: SPEC-security-zt-1
+title: "Cloudflare Zero Trust Access Integration"
+description: "Secure the entire application (UI and API) using Cloudflare Zero Trust, replacing the static admin token with JWT-based authentication."
+
+given_when_then:
+  - given: "A user without a valid Cloudflare Access session tries to access the dashboard UI"
+    when: "They navigate to the application URL"
+    then: "They should be redirected to the Identity Provider login page."
+
+  - given: "An authenticated user with a valid Access session accesses the dashboard UI"
+    when: "They navigate to the application URL"
+    then: "The React frontend should be served and rendered."
+
+  - given: "A request to a protected API endpoint lacks a valid CF_Authorization JWT"
+    when: "The API endpoint is called"
+    then: "The worker should return a 401 Unauthorized error."
+
+  - given: "A request to a protected API endpoint has a valid CF_Authorization JWT"
+    when: "The API endpoint is called"
+    then: "The worker should validate the JWT and process the request."
+
+  - given: "A JWT has an invalid signature or claims (e.g., wrong audience tag)"
+    when: "The JWT validation logic is executed"
+    then: "The validation should fail and the request should be rejected with a 401 error."
+
+acceptance_tests:
+  - id: TEST-zt-auth-1
+    desc: "Middleware correctly identifies and rejects requests without the CF_Authorization header."
+  - id: TEST-zt-auth-2
+    desc: "Middleware successfully validates a correctly signed JWT with valid claims (mocked)."
+  - id: TEST-zt-auth-3
+    desc: "Middleware rejects a JWT with an incorrect audience (aud) claim."
+  - id: TEST-zt-auth-4
+    desc: "Middleware rejects a JWT with an incorrect issuer."
+  - id: TEST-zt-auth-5
+    desc: "Protected API routes are inaccessible without passing the auth middleware."
+
+dependencies:
+  governance:
+    - "env.yaml: CF_ACCESS_TEAM_DOMAIN, CF_ACCESS_AUD_TAG secrets"
+  external:
+    - "Cloudflare Zero Trust configuration (IdP, Application, Policies)"
+    - "DNS pointing the application hostname to the Cloudflare Worker"
+
+linked_tasks:
+  - TASK-035 # This will be the new task ID
+
+implementation_notes:
+  - "Use the 'jose' library for JWT validation as it's edge-compatible."
+  - "The JWT public keys should be fetched from the Cloudflare Access keys endpoint and cached."
+  - "The static `ADMIN_TOKEN` should be fully deprecated and removed after successful implementation."
+  - "The solution must not expose any secrets on the client-side."
