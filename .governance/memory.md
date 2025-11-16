@@ -47,6 +47,49 @@
 
 ## Recent Accomplishments
 
+### 2025-11-15: Dashboard UI Foundations (TASK-030) ✅
+
+**Achievement**: Delivered fully interactive React dashboard (SPEC-web-dashboard-1) with live sync stats, charts, and manual controls embedded in `/frontend`.
+
+**Highlights**:
+- Added Vitest/jsdom/Test Library harness plus `frontend/vitest.config.ts` + setup polyfills (ResizeObserver, IntersectionObserver, localStorage).
+- Built hooks `useSyncStatus`, `useSyncStats`, `useSyncHistory`, `useNextSyncTime` on top of a reusable `useApiQuery` + `fetchJson` helper (handles polling + aborts).
+- Implemented UI building blocks: `StatsCard`, `SyncStatusPanel`, `SyncHistoryChart`, `VectorCountChart`, and `ActionButtons` (manual sync prompt + token cache + refresh).
+- Replaced `App.tsx` with DaisyUI layout: stats grid, sync status/next cron countdown, Recharts visualizations, and auto-refresh (30s) wiring to Worker admin APIs.
+
+**Testing**:
+- Added RED tests for TEST-web-dashboard-2/3/4/5/6 via `App.test.tsx`, `useSyncStatus.test.tsx`, and `ActionButtons.test.tsx` (covers stats rendering, countdown math, auto-refresh interval, manual sync auth flow).
+- `npm run -w frontend test` is now the canonical dashboard regression suite (jsdom environment warning about chart width is cosmetic).
+
+**Operational Notes**:
+- Next sync label intentionally renders `'(01:00 KST)'` per spec messaging even though cron ISO is 17:00 UTC (documented in format utilities to avoid regressions).
+- Follow-up tasks: TASK-031 (serve static assets from Worker) then TASK-032 (broader dashboard testing/docs).
+
+### 2025-11-15: Worker Static Assets (TASK-031) ✅
+
+**Achievement**: Embedded the Vite dashboard bundle directly into the Worker so GET `/` and `/assets/*` respond with cached, ETag-protected content without relying on R2 or external hosting.
+
+**Highlights**:
+- Created `scripts/build-frontend-assets.mjs` + `npm run build:frontend-assets` to compile `frontend/dist` and emit `src/static/assets.ts` (base64 bodies + headers + cache metadata).
+- Added `src/static/server.ts` helper + worker routing to normalize asset paths, support `If-None-Match`, and attach correct `Content-Type`/`Cache-Control` headers.
+- Hooked build script into `predev`/`predeploy` so wrangler dev/deploy always embeds the latest frontend.
+- Extended `src/index.e2e.test.ts` with GET `/` + `/assets/*` assertions (TEST-web-dashboard-1) to lock in serving behavior.
+
+**Testing**:
+- `npm test -- src/index.e2e.test.ts`
+
+### 2025-11-15: Dashboard Testing & Documentation (TASK-032) ✅
+
+**Achievement**: Added comprehensive Vitest coverage for dashboard hooks/components and documented the dashboard workflow (build, usage, troubleshooting) with a visual preview.
+
+**Highlights**:
+- Added hook tests for `useApiQuery`, `useSyncStats`, `useSyncHistory`, `useNextSyncTime` plus component tests (StatsCard, SyncStatusPanel, SyncHistoryChart, VectorCountChart, ActionButtons token cache) covering TEST-web-dashboard-2~6.
+- Updated README with a "Dashboard Monitoring" section, new commands (`npm run build:frontend-assets`), acceptance test mapping, and debugging tips.
+- Created `docs/dashboard-preview.svg` to give operators a quick visual of the dashboard layout.
+
+**Testing**:
+- `npm -w frontend run test`
+
 ### 2025-11-15: Deployment Documentation (TASK-015) ✅
 
 **Achievement**: Comprehensive production deployment guide in README.md

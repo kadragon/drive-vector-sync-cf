@@ -1,0 +1,60 @@
+spec_id: SPEC-deployment-1
+title: "Production Deployment"
+description: |
+  Deploy the Drive → Cloudflare Vectorize sync worker (with embedded dashboard)
+  to the Cloudflare Workers production environment. Ensure secrets, KV bindings,
+  Vectorize index, and scheduled cron trigger are configured and verified end-to-end.
+objectives:
+  - "Deploy worker with wrangler using production bindings"
+  - "Verify admin + dashboard routes respond with real data"
+  - "Trigger manual sync and confirm Vectorize updates"
+  - "Monitor first cron execution and capture logs"
+given_when_then:
+  - given: "All code and tests are green in main branch"
+    when: "wrangler deploy --env production is executed"
+    then: "Worker is published with correct bindings and version tag"
+
+  - given: "Worker is deployed"
+    when: "GET /health and GET /admin/status are called"
+    then: "Endpoints respond 200 with expected schema and production metrics"
+
+  - given: "Admin token is configured"
+    when: "POST /admin/resync runs in production"
+    then: "Sync job processes Drive changes and writes vectors to Vectorize"
+
+  - given: "Cron schedule hits 17:00 UTC"
+    when: "Scheduled event runs"
+    then: "Sync completes without errors and metrics/logs are captured"
+acceptance_tests:
+  - id: TEST-deployment-1
+    desc: "Production deploy succeeds with correct bindings"
+    steps:
+      - "Run wrangler deploy --env production"
+      - "Verify output includes worker URL and KV/vectorize bindings"
+
+  - id: TEST-deployment-2
+    desc: "Health + dashboard endpoints respond in production"
+    steps:
+      - "curl GET /health returns 200 with {status:\"ok\"}"
+      - "curl GET / returns HTML for dashboard"
+
+  - id: TEST-deployment-3
+    desc: "Admin APIs operate with production secrets"
+    steps:
+      - "curl GET /admin/status with Bearer token returns real metrics"
+      - "curl POST /admin/resync triggers sync and returns 202"
+
+  - id: TEST-deployment-4
+    desc: "Cron + monitoring verified"
+    steps:
+      - "Observe wrangler tail or dashboard logs during scheduled sync"
+      - "Confirm metrics + alerts emitted (if configured)"
+dependencies:
+  governance:
+    - ".governance/env.yaml"
+    - ".governance/memory.md"
+  infrastructure:
+    - "Cloudflare account with Vectorize + KV namespaces provisioned"
+    - "Google Drive service account credentials"
+linked_tasks:
+  - TASK-021

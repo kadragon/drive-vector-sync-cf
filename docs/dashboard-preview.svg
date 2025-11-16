@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Trace:
+    spec_id: SPEC-web-dashboard-1
+    task_id: TASK-032
+-->
+<svg width="960" height="540" viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dashboard layout preview">
+  <style>
+    .card { fill: #1f2937; stroke: #374151; stroke-width: 2; rx: 12; }
+    .title { font: 700 20px 'Inter', sans-serif; fill: #f3f4f6; }
+    .body { font: 400 16px 'Inter', sans-serif; fill: #d1d5db; }
+    .highlight { fill: #2563eb; stroke: none; }
+  </style>
+  <rect width="960" height="540" fill="#0f172a" />
+  <text x="40" y="60" class="title">Drive → Vectorize Dashboard</text>
+  <text x="40" y="90" class="body">Stats, sync status, charts, and manual controls served from the Worker root route.</text>
+
+  <rect x="40" y="120" width="300" height="120" class="card" />
+  <text x="60" y="160" class="title">Stats Grid</text>
+  <text x="60" y="190" class="body">Files, vectors, errors</text>
+
+  <rect x="360" y="120" width="260" height="120" class="card" />
+  <text x="380" y="160" class="title">Sync Status</text>
+  <text x="380" y="190" class="body">Next cron, countdown, duration</text>
+
+  <rect x="640" y="120" width="280" height="120" class="card" />
+  <text x="660" y="160" class="title">Action Buttons</text>
+  <text x="660" y="190" class="body">Manual sync + refresh</text>
+
+  <rect x="40" y="260" width="560" height="220" class="card" />
+  <text x="60" y="300" class="title">Sync History Chart</text>
+  <rect x="60" y="320" width="520" height="140" fill="#111827" stroke="#2563eb" stroke-dasharray="6 6" rx="10" />
+  <text x="80" y="395" class="body">Files processed per run</text>
+
+  <rect x="620" y="260" width="300" height="220" class="card" />
+  <text x="640" y="300" class="title">Vector Count Chart</text>
+  <rect x="640" y="320" width="260" height="140" fill="#111827" stroke="#22c55e" stroke-dasharray="10 6" rx="10" />
+  <text x="660" y="395" class="body">Upserted vs. deleted</text>
+</svg>

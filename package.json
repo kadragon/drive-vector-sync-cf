@@ -8,7 +8,9 @@
     "frontend"
   ],
   "scripts": {
+    "predev": "npm run build:frontend-assets",
     "dev": "wrangler dev",
+    "predeploy": "npm run build:frontend-assets",
     "deploy": "wrangler deploy",
     "test": "vitest",
     "test:watch": "vitest --watch",
@@ -20,7 +22,8 @@
     "frontend:dev": "npm -w frontend run dev",
     "frontend:build": "npm -w frontend run build",
     "frontend:preview": "npm -w frontend run preview",
-    "frontend:lint": "npm -w frontend run lint"
+    "frontend:lint": "npm -w frontend run lint",
+    "build:frontend-assets": "npm -w frontend run build && node ./scripts/build-frontend-assets.mjs"
   },
   "keywords": [
     "cloudflare-workers",
@@ -55,7 +58,7 @@
     "*.ts": [
       "eslint --fix",
       "prettier --write",
-      "vitest related --run"
+      "vitest related --run --environment jsdom"
     ]
   }
 }
