@@ -55,6 +55,41 @@ describe('EmbeddingClient', () => {
 
       expect(customClient).toBeDefined();
     });
+
+    it('should accept a pre-configured OpenAI client instance', () => {
+      const mockClient = {
+        embeddings: {
+          create: vi.fn(),
+        },
+      };
+
+      const testClient = new EmbeddingClient({
+        client: mockClient as any,
+      });
+
+      expect(testClient).toBeDefined();
+    });
+
+    it('should throw error when neither client nor apiKey is provided', () => {
+      expect(() => {
+        new EmbeddingClient({});
+      }).toThrow('Either "client" or "apiKey" must be provided in EmbeddingConfig');
+    });
+
+    it('should prefer client over apiKey when both are provided', () => {
+      const mockClient = {
+        embeddings: {
+          create: vi.fn(),
+        },
+      };
+
+      const testClient = new EmbeddingClient({
+        client: mockClient as any,
+        apiKey: 'test-key',
+      });
+
+      expect(testClient).toBeDefined();
+    });
   });
 
   describe('embedBatch', () => {

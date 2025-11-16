@@ -34,9 +34,14 @@ routes = [
   { pattern = "work.kadragon.work/*", zone_name = "kadragon.work" }
 ]
 
+workers_dev = false
+preview_urls = false
+
 # Secrets to configure via wrangler secrets:
 # GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_ROOT_FOLDER_ID, OPENAI_API_KEY,
 # CF_ACCESS_TEAM_DOMAIN, CF_ACCESS_AUD_TAG, GOOGLE_IMPERSONATION_EMAIL (optional),
+# CF_ACCOUNT_ID (optional - for AI Gateway), CF_AI_GATEWAY_NAME (optional - for AI Gateway),
+# CF_AI_GATEWAY_TOKEN (optional - for AI Gateway authentication),
 # WEBHOOK_URL/WEBHOOK_TYPE, PERFORMANCE_THRESHOLD
 
 [observability]

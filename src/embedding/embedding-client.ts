@@ -17,7 +17,16 @@ export interface EmbeddingResult {
 }
 
 export interface EmbeddingConfig {
-  apiKey: string;
+  /**
+   * OpenAI API key
+   * @deprecated Use 'client' parameter instead for better flexibility
+   */
+  apiKey?: string;
+  /**
+   * Pre-configured OpenAI client instance
+   * Recommended: use createOpenAIClient() from openai-factory.ts
+   */
+  client?: OpenAI;
   model?: string;
   dimensions?: number;
 }
@@ -34,9 +43,17 @@ export class EmbeddingClient {
   private dimensions: number;
 
   constructor(config: EmbeddingConfig) {
-    this.client = new OpenAI({
-      apiKey: config.apiKey,
-    });
+    // Support both pre-configured client and legacy API key config
+    if (config.client) {
+      this.client = config.client;
+    } else if (config.apiKey) {
+      this.client = new OpenAI({
+        apiKey: config.apiKey,
+      });
+    } else {
+      throw new Error('Either "client" or "apiKey" must be provided in EmbeddingConfig');
+    }
+
     this.model = config.model || DEFAULT_MODEL;
     this.dimensions = config.dimensions || DEFAULT_DIMENSIONS;
   }
@@ -61,7 +78,7 @@ export class EmbeddingClient {
       // Sort by index to ensure correct order
       const embeddings = response.data
         .sort((a, b) => a.index - b.index)
-        .map((item) => item.embedding);
+        .map(item => item.embedding);
 
       // Validate dimensions
       for (const embedding of embeddings) {
@@ -93,10 +110,7 @@ export class EmbeddingClient {
   /**
    * Process texts in batches with concurrency control
    */
-  async embedWithBatching(
-    texts: string[],
-    batchSize: number = 32
-  ): Promise<number[][]> {
+  async embedWithBatching(texts: string[], batchSize: number = 32): Promise<number[][]> {
     const results: number[][] = [];
 
     for (let i = 0; i < texts.length; i += batchSize) {

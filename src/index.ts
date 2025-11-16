@@ -19,6 +19,7 @@ import { AdminHandler } from './api/admin-handler.js';
 import { requireAccessJwt, unauthorizedResponse } from './auth/zt-validator.js';
 import { logError } from './errors/index.js';
 import { resolveAssetPath, serveStaticAsset } from './static/server.js';
+import { createOpenAIClient } from './openai/openai-factory.js';
 import type { VectorizeIndex } from './types/vectorize.js';
 
 export interface Env {
@@ -36,6 +37,10 @@ export interface Env {
   OPENAI_API_KEY: string;
   CF_ACCESS_TEAM_DOMAIN: string;
   CF_ACCESS_AUD_TAG: string;
+  // Optional: Cloudflare AI Gateway configuration
+  CF_ACCOUNT_ID?: string;
+  CF_AI_GATEWAY_NAME?: string;
+  CF_AI_GATEWAY_TOKEN?: string;
 
   // Environment variables
   CHUNK_SIZE: string;
@@ -63,8 +68,16 @@ function initializeServices(env: Env) {
     env.GOOGLE_IMPERSONATION_EMAIL
   );
 
-  const embeddingClient = new EmbeddingClient({
+  // Create OpenAI client with optional AI Gateway routing
+  const openaiClient = createOpenAIClient({
     apiKey: env.OPENAI_API_KEY,
+    cfAccountId: env.CF_ACCOUNT_ID,
+    cfGatewayName: env.CF_AI_GATEWAY_NAME,
+    cfGatewayToken: env.CF_AI_GATEWAY_TOKEN,
+  });
+
+  const embeddingClient = new EmbeddingClient({
+    client: openaiClient,
   });
 
   // Vector store client - Cloudflare Vectorize

@@ -317,7 +317,61 @@ wrangler secret put OPENAI_API_KEY
 
 Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys).
 
-#### 3.4 Admin Token (Required)
+#### 3.4 Optional: Cloudflare AI Gateway
+
+**Recommended**: Route OpenAI API calls through Cloudflare AI Gateway for improved
+caching, rate limiting, and analytics.
+
+1. Create an AI Gateway in your Cloudflare dashboard:
+   - Go to AI > AI Gateway
+   - Click "Create Gateway"
+   - Enter a name (e.g., `worknote-ai-gateway`)
+   - Save the gateway name
+
+2. Configure the gateway in your Worker:
+
+```bash
+# Set your Cloudflare account ID
+wrangler secret put CF_ACCOUNT_ID
+# Enter your account ID (found in Cloudflare dashboard)
+
+# Set your AI Gateway name
+wrangler secret put CF_AI_GATEWAY_NAME
+# Enter the gateway name you created above
+```
+
+3. **(Optional) Enable AI Gateway Authentication**:
+
+   If you want to protect your AI Gateway with authentication:
+
+   a. In Cloudflare dashboard, go to your AI Gateway settings
+   b. Click "Create authentication token" with `Run` permissions
+   c. Copy the token immediately (it won't be shown again)
+   d. Configure the token in your Worker:
+
+   ```bash
+   wrangler secret put CF_AI_GATEWAY_TOKEN
+   # Enter the authentication token you created
+   ```
+
+   The Worker will automatically include the `cf-aig-authorization: Bearer {token}`
+   header in all requests.
+
+When both `CF_ACCOUNT_ID` and `CF_AI_GATEWAY_NAME` are configured, all OpenAI API
+calls will automatically route through:
+`https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_name}/openai`
+
+**Benefits:**
+- **Caching**: Reduce costs by caching identical embedding requests
+- **Rate Limiting**: Protect against API abuse
+- **Analytics**: Track usage and costs in Cloudflare dashboard
+- **Resilience**: Automatic retries and failover
+- **Security**: Optional token-based authentication
+
+**Note:** If these secrets are not set, the Worker will use OpenAI API directly
+(which still works perfectly fine).
+
+#### 3.5 Zero Trust Authentication (Required)
 
 ```bash
 wrangler secret put ADMIN_TOKEN
@@ -333,7 +387,7 @@ openssl rand -hex 32
 # Or use any password manager
 ```
 
-#### 3.5 Optional: Domain-Wide Delegation
+#### 3.6 Optional: Domain-Wide Delegation
 
 If you need to impersonate a specific user (for enterprise use cases):
 
@@ -379,7 +433,12 @@ Expected output:
 GOOGLE_SERVICE_ACCOUNT_JSON
 GOOGLE_ROOT_FOLDER_ID
 OPENAI_API_KEY
-ADMIN_TOKEN
+CF_ACCESS_TEAM_DOMAIN
+CF_ACCESS_AUD_TAG
+CF_ACCOUNT_ID (optional - for AI Gateway)
+CF_AI_GATEWAY_NAME (optional - for AI Gateway)
+CF_AI_GATEWAY_TOKEN (optional - for AI Gateway authentication)
+GOOGLE_IMPERSONATION_EMAIL (optional - for domain-wide delegation)
 ```
 
 ### Step 4: Deploy to Production

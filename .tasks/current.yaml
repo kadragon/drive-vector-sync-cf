@@ -2,9 +2,3 @@
 # Only one task should be active at a time
 
 current_task: null
-
-# Latest task state prior to switch:
-# TASK-036 (SPEC-embedding-pipeline-1) completed - aligned all code/docs to 1536 dimensions for Vectorize compatibility.
-# TASK-038 (SPEC-security-zt-1) completed - tightened JWKS typing in Access validator.
-# TASK-037 (SPEC-security-zt-1) completed - hardened CF_Authorization cookie parsing.
-# TASK-021 (SPEC-deployment-1) paused pending ADMIN_TOKEN to verify /admin endpoints and first cron run.
