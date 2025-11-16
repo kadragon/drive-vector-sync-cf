@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AdminHandler, validateAdminToken } from './admin-handler';
+import { AdminHandler } from './admin-handler';
 import { SyncOrchestrator, SyncResult } from '../sync/sync-orchestrator';
 import { KVStateManager, SyncState } from '../state/kv-state-manager';
 import { VectorStoreClient } from '../types/vector-store';
@@ -527,91 +527,5 @@ describe('AdminHandler', () => {
       // Pretty-printed JSON should contain newlines and indentation
       expect(text).toContain('\n');
     });
-  });
-});
-
-describe('validateAdminToken', () => {
-  const validToken = 'secret-admin-token-123';
-
-  it('should accept valid Bearer tokens', () => {
-    const request = new Request('http://localhost/admin/status', {
-      headers: {
-        Authorization: `Bearer ${validToken}`,
-      },
-    });
-
-    const result = validateAdminToken(request, validToken);
-
-    expect(result).toBe(true);
-  });
-
-  it('should reject invalid tokens', () => {
-    const request = new Request('http://localhost/admin/status', {
-      headers: {
-        Authorization: 'Bearer wrong-token',
-      },
-    });
-
-    const result = validateAdminToken(request, validToken);
-
-    expect(result).toBe(false);
-  });
-
-  it('should reject missing Authorization header', () => {
-    const request = new Request('http://localhost/admin/status');
-
-    const result = validateAdminToken(request, validToken);
-
-    expect(result).toBe(false);
-  });
-
-  it('should handle malformed Authorization headers', () => {
-    const request = new Request('http://localhost/admin/status', {
-      headers: {
-        Authorization: 'InvalidFormat',
-      },
-    });
-
-    const result = validateAdminToken(request, validToken);
-
-    expect(result).toBe(false);
-  });
-
-  it('should handle empty token', () => {
-    const request = new Request('http://localhost/admin/status', {
-      headers: {
-        Authorization: 'Bearer ',
-      },
-    });
-
-    const result = validateAdminToken(request, validToken);
-
-    expect(result).toBe(false);
-  });
-
-  it('should be case-sensitive', () => {
-    const request = new Request('http://localhost/admin/status', {
-      headers: {
-        Authorization: `bearer ${validToken}`, // lowercase 'bearer'
-      },
-    });
-
-    const result = validateAdminToken(request, validToken);
-
-    // Should fail because of case mismatch
-    expect(result).toBe(false);
-  });
-
-  it('should handle tokens with special characters', () => {
-    const specialToken = 'token-with-!@#$%^&*()_+';
-    const request = new Request('http://localhost/admin/status', {
-      headers: {
-        Authorization: `Bearer ${specialToken}`,
-      },
-    });
-
-    const result = validateAdminToken(request, specialToken);
-
-    expect(result).toBe(true);
   });
 });

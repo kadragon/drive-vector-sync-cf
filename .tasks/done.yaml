@@ -2,6 +2,30 @@
 # Tasks are moved here when completed
 
 completed_tasks:
+  - task_id: TASK-037
+    spec_id: SPEC-security-zt-1
+    title: "Harden CF_Authorization cookie parsing"
+    completed_at: "2025-11-16T00:00:00Z"
+    duration: "0.2 hours"
+    outcome: "Cookie-based Access token extraction now slices by prefix to avoid truncating values containing '='."
+    tests_passed:
+      - npm exec vitest run src/auth/zt-validator.test.ts
+    notes: |
+      - Updated CF_Authorization cookie parsing to use substring after the known prefix instead of split on '='.
+      - Exported extractAccessToken for clarity and added regression test to ensure tokens with '=' are not cut.
+
+  - task_id: TASK-038
+    spec_id: SPEC-security-zt-1
+    title: "Tighten JWKS typing for Access validator"
+    completed_at: "2025-11-16T00:00:00Z"
+    duration: "0.1 hours"
+    outcome: "JWKS typing now uses jose JSONWebKeySet, eliminating the createLocalJWKSet 'as any' cast."
+    tests_passed:
+      - npm exec vitest run src/auth/zt-validator.test.ts
+    notes: |
+      - Imported JSONWebKeySet and aliased JWKS accordingly.
+      - Removed unsafe cast in createLocalJWKSet call.
+
   - task_id: TASK-031
     spec_id: SPEC-web-dashboard-1
     title: "Worker integration - serve static assets"
@@ -62,6 +86,21 @@ completed_tasks:
     tests_passed: []
     notes: |
       Enhanced README.md with production-ready deployment documentation.
+
+  - task_id: TASK-035
+    spec_id: SPEC-security-zt-1
+    title: "Implement Cloudflare Zero Trust Access for UI and API"
+    completed_at: "2025-11-16T06:18:00Z"
+    duration: "0.8 hours"
+    outcome: "Admin/API now protected by Cloudflare Access JWTs; dashboard uses Access session instead of static token."
+    tests_passed:
+      - npm test
+      - npm exec vitest run src/auth/zt-validator.test.ts
+    notes: |
+      - Added jose-based validator with JWKS cache (`src/auth/zt-validator.ts`), wired to `/admin` routes.
+      - Updated frontend manual sync to drop token prompts; relies on Access session cookie.
+      - E2E tests updated to use CF_Authorization; new unit tests cover issuer/audience rejection.
+      - Deployment refreshed with Access secrets set (CF_ACCESS_TEAM_DOMAIN, CF_ACCESS_AUD_TAG) and confirmed Access 302 on /health.
 
       Documentation Coverage:
       - Google Service Account Setup (4 subsections):

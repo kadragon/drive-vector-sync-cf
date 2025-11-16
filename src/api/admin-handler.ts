@@ -167,12 +167,3 @@ export class AdminHandler {
     });
   }
 }
-
-/**
- * Validate admin token from request
- */
-export function validateAdminToken(request: Request, adminToken: string): boolean {
-  const authHeader = request.headers.get('Authorization');
-  const token = authHeader?.replace('Bearer ', '');
-  return token === adminToken;
-}

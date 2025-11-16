@@ -55,6 +55,25 @@ vi.mock('openai', () => ({
   },
 }));
 
+vi.mock('./auth/zt-validator.js', () => {
+  return {
+    requireAccessJwt: vi.fn(async (request: Request) => {
+      const token = request.headers.get('CF_Authorization');
+      if (!token) {
+        throw new Error('Missing CF_Authorization token');
+      }
+      if (token !== 'valid-access-token') {
+        throw new Error('Invalid token');
+      }
+      return {};
+    }),
+    unauthorizedResponse: (message: string) => new Response(JSON.stringify({ error: 'Unauthorized', message }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    }),
+  };
+});
+
 import worker from './index';
 import type { Env } from './index';
 import { STATIC_ASSETS } from './static/assets';
@@ -182,7 +201,8 @@ function createMockEnv(): Env {
     GOOGLE_IMPERSONATION_EMAIL: undefined,
     GOOGLE_ROOT_FOLDER_ID: 'test-root-folder-id',
     OPENAI_API_KEY: 'test-openai-key',
-    ADMIN_TOKEN: 'test-admin-token-123',
+    CF_ACCESS_TEAM_DOMAIN: 'kadragon.cloudflareaccess.com',
+    CF_ACCESS_AUD_TAG: 'test-aud',
     CHUNK_SIZE: '2000',
     MAX_BATCH_SIZE: '32',
     MAX_CONCURRENCY: '2',
@@ -248,7 +268,7 @@ describe('E2E Integration Tests', () => {
     });
 
     describe('Authentication', () => {
-      it('should reject requests without Authorization header', async () => {
+      it('should reject requests without CF_Authorization header', async () => {
         const request = new Request('http://localhost/admin/status');
         const response = await worker.fetch(request, env, ctx);
 
@@ -260,7 +280,7 @@ describe('E2E Integration Tests', () => {
       it('should reject requests with invalid token', async () => {
         const request = new Request('http://localhost/admin/status', {
           headers: {
-            Authorization: 'Bearer wrong-token',
+            CF_Authorization: 'wrong-token',
           },
         });
         const response = await worker.fetch(request, env, ctx);
@@ -270,10 +290,10 @@ describe('E2E Integration Tests', () => {
         expect(data).toEqual({ error: 'Unauthorized' });
       });
 
-      it('should accept requests with valid Bearer token', async () => {
+      it('should accept requests with valid CF_Authorization token', async () => {
         const request = new Request('http://localhost/admin/status', {
           headers: {
-            Authorization: 'Bearer test-admin-token-123',
+            CF_Authorization: 'valid-access-token',
           },
         });
         const response = await worker.fetch(request, env, ctx);
@@ -299,7 +319,7 @@ describe('E2E Integration Tests', () => {
 
         const request = new Request('http://localhost/admin/status', {
           headers: {
-            Authorization: 'Bearer test-admin-token-123',
+            CF_Authorization: 'valid-access-token',
           },
         });
 
@@ -319,7 +339,7 @@ describe('E2E Integration Tests', () => {
       it('should handle empty state', async () => {
         const request = new Request('http://localhost/admin/status', {
           headers: {
-            Authorization: 'Bearer test-admin-token-123',
+            CF_Authorization: 'valid-access-token',
           },
         });
 
@@ -340,7 +360,7 @@ describe('E2E Integration Tests', () => {
       it('should return vector store statistics', async () => {
         const request = new Request('http://localhost/admin/stats', {
           headers: {
-            Authorization: 'Bearer test-admin-token-123',
+            CF_Authorization: 'valid-access-token',
           },
         });
 
@@ -359,7 +379,7 @@ describe('E2E Integration Tests', () => {
         const request = new Request('http://localhost/admin/resync', {
           method: 'GET',
           headers: {
-            Authorization: 'Bearer test-admin-token-123',
+            CF_Authorization: 'valid-access-token',
           },
         });
 
@@ -377,7 +397,7 @@ describe('E2E Integration Tests', () => {
         const request = new Request('http://localhost/admin/resync', {
           method: 'POST',
           headers: {
-            Authorization: 'Bearer test-admin-token-123',
+            CF_Authorization: 'valid-access-token',
           },
         });
 
@@ -493,7 +513,7 @@ describe('E2E Integration Tests', () => {
       // Verify state persists
       const request = new Request('http://localhost/admin/status', {
         headers: {
-          Authorization: 'Bearer test-admin-token-123',
+          CF_Authorization: 'valid-access-token',
         },
       });
 
@@ -512,7 +532,7 @@ describe('E2E Integration Tests', () => {
 
       const request = new Request('http://localhost/admin/status', {
         headers: {
-          Authorization: 'Bearer test-admin-token-123',
+          CF_Authorization: 'valid-access-token',
         },
       });
 
@@ -570,7 +590,7 @@ describe('E2E Integration Tests', () => {
     it('should complete full workflow: status check -> resync -> status check', async () => {
       // 1. Check initial status
       const statusRequest1 = new Request('http://localhost/admin/status', {
-        headers: { Authorization: 'Bearer test-admin-token-123' },
+        headers: { CF_Authorization: 'valid-access-token' },
       });
       const statusResponse1 = await worker.fetch(statusRequest1, env, ctx);
       expect(statusResponse1.status).toBe(200);
@@ -581,7 +601,7 @@ describe('E2E Integration Tests', () => {
       // For now, verify the endpoint is accessible
       const resyncRequest = new Request('http://localhost/admin/resync', {
         method: 'POST',
-        headers: { Authorization: 'Bearer test-admin-token-123' },
+        headers: { CF_Authorization: 'valid-access-token' },
       });
       const resyncResponse = await worker.fetch(resyncRequest, env, ctx);
 
@@ -606,7 +626,7 @@ describe('E2E Integration Tests', () => {
         { length: 5 },
         () =>
           new Request('http://localhost/admin/status', {
-            headers: { Authorization: 'Bearer test-admin-token-123' },
+            headers: { CF_Authorization: 'valid-access-token' },
           })
       );
 
@@ -634,7 +654,7 @@ describe('E2E Integration Tests', () => {
 
       // Query stats endpoint
       const request = new Request('http://localhost/admin/stats', {
-        headers: { Authorization: 'Bearer test-admin-token-123' },
+        headers: { CF_Authorization: 'valid-access-token' },
       });
 
       const response = await worker.fetch(request, env, ctx);
