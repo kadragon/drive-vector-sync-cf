@@ -50,9 +50,10 @@ export class VectorizeClient implements VectorStoreClient {
    * Initialize collection - NO-OP for Vectorize (done via CLI)
    *
    * Collection must be created before deployment:
-   * wrangler vectorize create project-docs --dimensions=3072 --metric=cosine
+   * wrangler vectorize create project-docs --dimensions=1536 --metric=cosine
+   * Cloudflare Vectorize supports dimensions from 32 to 1536
    */
-  async initializeCollection(vectorSize: number = 3072): Promise<void> {
+  async initializeCollection(vectorSize: number = 1536): Promise<void> {
     console.log(
       `Vectorize index '${this.collectionName}' managed via wrangler CLI (${vectorSize} dims)`
     );
@@ -66,7 +67,7 @@ export class VectorizeClient implements VectorStoreClient {
       if ((error as Error).message?.includes('not found')) {
         console.warn(`Vectorize index '${this.collectionName}' may not exist yet`);
         console.warn(
-          'Create it with: wrangler vectorize create project-docs --dimensions=3072 --metric=cosine'
+          'Create it with: wrangler vectorize create project-docs --dimensions=1536 --metric=cosine'
         );
       }
     }
@@ -296,7 +297,7 @@ export class VectorizeClient implements VectorStoreClient {
       points_count: await this.countVectors(),
       status: 'ready',
       vectors: {
-        size: 3072,
+        size: 1536,
         distance: 'Cosine',
       },
     };

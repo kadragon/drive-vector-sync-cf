@@ -2,6 +2,24 @@
 # Tasks are moved here when completed
 
 completed_tasks:
+  - task_id: TASK-036
+    spec_id: SPEC-embedding-pipeline-1
+    title: "Align embedding dimensions with Vectorize limit"
+    completed_at: "2025-11-16T08:30:00Z"
+    duration: "0.5 hours"
+    outcome: "Successfully aligned all code, tests, and documentation to use 1536 dimensions for Cloudflare Vectorize compatibility."
+    tests_passed:
+      - Backend: 259/261 tests passed (2 pre-existing auth failures unrelated to task)
+      - All embedding, vectorize, and dimension-related tests passing
+    notes: |
+      - Updated .spec/embedding-pipeline/spec.yaml to reference 1536 dimensions
+      - Changed model from text-embedding-3-large to text-embedding-3-small in .governance/env.yaml
+      - Updated all test files to use Array(1536) instead of Array(3072)
+      - Updated vectorize-client.ts default dimension parameter and comments
+      - Updated README.md wrangler commands and cost tracking (6.5x cheaper)
+      - Production Vectorize index already at 1536 dims from TASK-021
+      - Cost savings: $0.00013 → $0.00002 per 1K tokens
+
   - task_id: TASK-037
     spec_id: SPEC-security-zt-1
     title: "Harden CF_Authorization cookie parsing"

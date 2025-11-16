@@ -2,24 +2,6 @@
 # Remaining pending tasks sorted by priority
 
 tasks:
-  - task_id: TASK-036
-    spec_id: SPEC-embedding-pipeline-1
-    title: "Align embedding dimensions with Vectorize limit"
-    priority: 1
-    status: pending
-    dependencies: []
-    estimated_effort: 0.5 hours
-    description: |
-      Update specs, docs, and defaults to match Cloudflare Vectorize's 1536-dimension limit. Current
-      guidance still mentions text-embedding-3-large (3072 dims), which fails when creating indexes.
-      Ensure EmbeddingClient uses dimensions=1536 (or an explicit parameter) and refresh README/
-      wrangler instructions accordingly.
-    test_refs:
-      - "TEST-embedding-pipeline-1"
-    notes: |
-      Cloudflare API rejects dimensions >1536 (error code 3003). worknote-store was recreated at 1536
-      on 2025-11-16 during TASK-021 deployment.
-
   - task_id: TASK-021
     spec_id: SPEC-deployment-1
     title: "Production deployment"
