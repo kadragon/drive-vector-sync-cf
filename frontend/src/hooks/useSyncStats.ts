@@ -1,5 +1,6 @@
 import { useApiQuery } from './useApiQuery';
 import type { SyncStats } from '../types/api';
+import { SyncStatsSchema } from '../types/api';
 
 /**
  * Trace:
@@ -13,5 +14,5 @@ interface UseSyncStatsOptions {
 
 export function useSyncStats(options: UseSyncStatsOptions = {}) {
   const { autoRefreshMs = 60000 } = options;
-  return useApiQuery<SyncStats>('/admin/stats', { autoRefreshMs });
+  return useApiQuery<SyncStats>('/admin/stats', { autoRefreshMs, schema: SyncStatsSchema });
 }

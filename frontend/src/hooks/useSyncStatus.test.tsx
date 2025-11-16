@@ -57,6 +57,7 @@ describe('useSyncStatus', () => {
       ok: false,
       status: 500,
       statusText: 'Internal Error',
+      headers: { get: () => 'application/json' },
       json: async () => ({ error: 'boom' }),
     });
 
@@ -64,7 +65,7 @@ describe('useSyncStatus', () => {
 
     const { result } = renderHook(() => useSyncStatus({ autoRefreshMs: 0 }));
 
-    await waitFor(() => expect(result.current.error).toContain('boom'));
+    await waitFor(() => expect(result.current.error).toContain('Server error'));
     expect(result.current.data).toBeNull();
   });
 });

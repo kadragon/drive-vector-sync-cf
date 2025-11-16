@@ -7,8 +7,8 @@
  * - Full integration with mocked external dependencies
  *
  * Trace:
- *   spec_id: SPEC-scheduling-1, SPEC-admin-api-1
- *   task_id: TASK-014
+ *   spec_id: SPEC-scheduling-1, SPEC-admin-api-1, SPEC-web-dashboard-1
+ *   task_id: TASK-014, TASK-031
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -57,6 +57,7 @@ vi.mock('openai', () => ({
 
 import worker from './index';
 import type { Env } from './index';
+import { STATIC_ASSETS } from './static/assets';
 
 /**
  * Mock KVNamespace implementation
@@ -385,6 +386,33 @@ describe('E2E Integration Tests', () => {
         expect(response.status).toBe(409);
         const data = await response.json();
         expect(data).toHaveProperty('error');
+      });
+    });
+
+    describe('Dashboard Static Assets', () => {
+      it('should serve dashboard HTML at root path', async () => {
+        const request = new Request('http://localhost/');
+        const response = await worker.fetch(request, env, ctx);
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get('Content-Type')).toContain('text/html');
+        const html = await response.text();
+        expect(html).toContain('<div id="root">');
+      });
+
+      it('should serve bundled assets with caching headers', async () => {
+        const jsAssetPath = Object.keys(STATIC_ASSETS).find(path => path.endsWith('.js'));
+        expect(jsAssetPath).toBeDefined();
+
+        const request = new Request(`http://localhost${jsAssetPath}`);
+        const response = await worker.fetch(request, env, ctx);
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get('Content-Type')).toBe('application/javascript');
+        expect(response.headers.get('Cache-Control')).toContain('public');
+        expect(response.headers.get('ETag')).toBeTruthy();
+        const body = await response.text();
+        expect(body.length).toBeGreaterThan(0);
       });
     });
 

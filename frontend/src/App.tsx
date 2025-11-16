@@ -9,6 +9,7 @@ import { useSyncHistory } from './hooks/useSyncHistory';
 import { useSyncStats } from './hooks/useSyncStats';
 import { useSyncStatus } from './hooks/useSyncStatus';
 import { formatNumber, formatRelativeTime, formatUtcDateTime } from './utils/format';
+import { HISTORY_DEFAULT_DAYS } from './config/constants';
 import './App.css';
 
 /**
@@ -41,12 +42,24 @@ function App() {
     error: historyError,
     isLoading: isHistoryLoading,
     refresh: refreshHistory,
-  } = useSyncHistory(14);
+  } = useSyncHistory(HISTORY_DEFAULT_DAYS);
 
   const nextSync = useNextSyncTime(statusData?.nextScheduledSync ?? null);
 
   const refreshAll = useCallback(async () => {
-    await Promise.all([refreshStatus(), refreshStats(), refreshHistory()]);
+    const results = await Promise.allSettled([
+      refreshStatus(),
+      refreshStats(),
+      refreshHistory(),
+    ]);
+
+    // Log failures but continue with successful refreshes
+    results.forEach((result, idx) => {
+      if (result.status === 'rejected') {
+        const apiNames = ['status', 'stats', 'history'];
+        console.error(`Failed to refresh ${apiNames[idx]}:`, result.reason);
+      }
+    });
   }, [refreshHistory, refreshStats, refreshStatus]);
 
   const lastSyncRelative = formatRelativeTime(statusData?.lastSyncTime);

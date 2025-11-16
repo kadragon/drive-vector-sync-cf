@@ -49,7 +49,7 @@ export function SyncStatusPanel({
       <div className="text-sm text-base-content/70">
         Last Sync Duration: <span className="font-semibold">{formatDuration(lastSyncDuration)}</span>
       </div>
-      {isLocked && <progress className="progress progress-primary" value={70} max={100}></progress>}
+      {isLocked && <progress className="progress progress-primary"></progress>}
     </div>
   );
 }

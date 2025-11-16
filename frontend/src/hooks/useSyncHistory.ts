@@ -1,5 +1,6 @@
 import { useApiQuery } from './useApiQuery';
-import type { SyncHistoryEntry } from '../types/api';
+import type { SyncHistoryResponse } from '../types/api';
+import { SyncHistoryResponseSchema } from '../types/api';
 
 /**
  * Trace:
@@ -11,14 +12,11 @@ interface UseSyncHistoryOptions {
   autoRefreshMs?: number;
 }
 
-interface SyncHistoryResponse {
-  history: SyncHistoryEntry[];
-}
-
 export function useSyncHistory(limit = 30, options: UseSyncHistoryOptions = {}) {
   const { autoRefreshMs = 60000 } = options;
   const query = useApiQuery<SyncHistoryResponse>(`/admin/history?limit=${limit}`, {
     autoRefreshMs,
+    schema: SyncHistoryResponseSchema,
   });
 
   return {

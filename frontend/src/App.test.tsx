@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import { describe, it, vi, beforeEach, afterEach } from 'vitest';
 import App from './App';

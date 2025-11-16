@@ -1,35 +1,50 @@
 // API response types for the Drive Vector Sync Worker
+import { z } from 'zod';
 
-export interface SyncStatus {
-  status: 'ok';
-  lastSyncTime: string | null;
-  filesProcessed: number;
-  errorCount: number;
-  hasStartPageToken: boolean;
-  isLocked: boolean;
-  nextScheduledSync: string | null;
-  lastSyncDuration: number | null;
-}
+// Zod schemas for runtime validation
+export const SyncStatusSchema = z.object({
+  status: z.literal('ok'),
+  lastSyncTime: z.string().nullable(),
+  filesProcessed: z.number(),
+  errorCount: z.number(),
+  hasStartPageToken: z.boolean(),
+  isLocked: z.boolean(),
+  nextScheduledSync: z.string().nullable(),
+  lastSyncDuration: z.number().nullable(),
+});
 
-export interface SyncStats {
-  collection?: string;
-  vectorCount: number;
-  status?: string;
-}
+export const SyncStatsSchema = z.object({
+  collection: z.string().optional(),
+  vectorCount: z.number(),
+  status: z.string().optional(),
+});
 
-export interface SyncHistoryEntry {
-  timestamp: string;
-  filesProcessed: number;
-  vectorsUpserted: number;
-  vectorsDeleted: number;
-  duration: number;
-  errors: string[];
-}
+export const SyncHistoryEntrySchema = z.object({
+  timestamp: z.string(),
+  filesProcessed: z.number(),
+  vectorsUpserted: z.number(),
+  vectorsDeleted: z.number(),
+  duration: z.number(),
+  errors: z.array(z.string()),
+});
 
-export interface HealthCheck {
-  status: 'ok';
-}
+export const HealthCheckSchema = z.object({
+  status: z.literal('ok'),
+});
 
-export interface ErrorResponse {
-  error: string;
-}
+export const ErrorResponseSchema = z.object({
+  error: z.string(),
+});
+
+export const SyncHistoryResponseSchema = z.object({
+  history: z.array(SyncHistoryEntrySchema),
+  count: z.number().optional(),
+});
+
+// TypeScript types inferred from schemas
+export type SyncStatus = z.infer<typeof SyncStatusSchema>;
+export type SyncStats = z.infer<typeof SyncStatsSchema>;
+export type SyncHistoryEntry = z.infer<typeof SyncHistoryEntrySchema>;
+export type HealthCheck = z.infer<typeof HealthCheckSchema>;
+export type ErrorResponse = z.infer<typeof ErrorResponseSchema>;
+export type SyncHistoryResponse = z.infer<typeof SyncHistoryResponseSchema>;

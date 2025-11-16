@@ -1,5 +1,7 @@
 import { useApiQuery } from './useApiQuery';
 import type { SyncStatus } from '../types/api';
+import { SyncStatusSchema } from '../types/api';
+import { POLLING_INTERVAL_MS } from '../config/constants';
 
 /**
  * Trace:
@@ -12,6 +14,6 @@ interface UseSyncStatusOptions {
 }
 
 export function useSyncStatus(options: UseSyncStatusOptions = {}) {
-  const { autoRefreshMs = 30000 } = options;
-  return useApiQuery<SyncStatus>('/admin/status', { autoRefreshMs });
+  const { autoRefreshMs = POLLING_INTERVAL_MS } = options;
+  return useApiQuery<SyncStatus>('/admin/status', { autoRefreshMs, schema: SyncStatusSchema });
 }

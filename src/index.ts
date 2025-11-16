@@ -6,8 +6,8 @@
  * - HTTP requests (admin API)
  *
  * Trace:
- *   spec_id: SPEC-scheduling-1, SPEC-admin-api-1
- *   task_id: TASK-009, TASK-011, TASK-027
+ *   spec_id: SPEC-scheduling-1, SPEC-admin-api-1, SPEC-web-dashboard-1
+ *   task_id: TASK-009, TASK-011, TASK-027, TASK-031
  */
 
 import { DriveClient } from './drive/drive-client.js';
@@ -17,6 +17,7 @@ import { KVStateManager } from './state/kv-state-manager.js';
 import { SyncOrchestrator } from './sync/sync-orchestrator.js';
 import { AdminHandler, validateAdminToken } from './api/admin-handler.js';
 import { logError } from './errors/index.js';
+import { resolveAssetPath, serveStaticAsset } from './static/server.js';
 import type { VectorizeIndex } from './types/vectorize.js';
 
 export interface Env {
@@ -152,6 +153,12 @@ export default {
       return new Response(JSON.stringify({ status: 'ok' }), {
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    // Static dashboard assets (root HTML + bundled files)
+    const assetPath = resolveAssetPath(url.pathname);
+    if (assetPath) {
+      return serveStaticAsset(request, assetPath);
     }
 
     // Admin endpoints require authentication

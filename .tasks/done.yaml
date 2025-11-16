@@ -2,6 +2,33 @@
 # Tasks are moved here when completed
 
 completed_tasks:
+  - task_id: TASK-031
+    spec_id: SPEC-web-dashboard-1
+    title: "Worker integration - serve static assets"
+    completed_at: "2025-11-15T13:22:34Z"
+    duration: "1 hour"
+    outcome: "Worker now serves the React dashboard bundle from GET / and /assets/* with caching + ETag support"
+    tests_passed:
+      - npm test -- src/index.e2e.test.ts
+    notes: |
+      - Added CI-friendly script (`npm run build:frontend-assets`) that builds the frontend and embeds all dist files into `src/static/assets.ts`.
+      - Created base64-encoded asset map + helper server to stream HTML/JS/CSS with proper Content-Type, Cache-Control, and conditional ETag responses.
+      - Updated worker routing + Vitest E2E suite to cover GET / dashboard HTML and static asset delivery (TEST-web-dashboard-1).
+      - Configured `predev`/`predeploy` hooks so wrangler dev/deploy always rebuilds the frontend bundle first.
+
+  - task_id: TASK-032
+    spec_id: SPEC-web-dashboard-1
+    title: "Web dashboard testing and documentation"
+    completed_at: "2025-11-15T13:48:01Z"
+    duration: "2 hours"
+    outcome: "Dashboard now has dedicated Vitest coverage (hooks + components) and README instructions with visuals"
+    tests_passed:
+      - npm -w frontend run test
+    notes: |
+      - Added focused tests for `useApiQuery`, `useSyncStats`, `useSyncHistory`, `useNextSyncTime`, Stats cards, status panel, and chart components (TEST-web-dashboard-2~6).
+      - Extended ActionButtons tests to reuse cached admin tokens.
+      - Documented the dashboard build/serve workflow, local dev modes, troubleshooting tips, and included an SVG preview in README.
+
   - task_id: TASK-030
     spec_id: SPEC-web-dashboard-1
     title: "Implement dashboard UI components"

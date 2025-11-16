@@ -51,6 +51,91 @@ This system implements a **Spec-Driven Development (SDD) × Test-Driven Developm
 └── wrangler.toml       # Cloudflare configuration
 ```
 
+## Dashboard Monitoring (SPEC-web-dashboard-1)
+
+![Dashboard Overview](docs/dashboard-preview.svg)
+
+The React dashboard (served from the Worker root route) surfaces live sync stats,
+status badges, history/volume charts, and manual controls that talk to the
+`/admin/*` APIs. Static assets are embedded directly into the Worker bundle so
+GET `/` and GET `/assets/*` never leave Cloudflare.
+
+### Build + Embed Workflow
+
+1. **Iterate in Vite** – `npm run frontend:dev` launches the dashboard on
+   <http://localhost:5173> with proxy rules for `/admin` & `/health`.
+2. **Generate Worker assets** – `npm run build:frontend-assets` runs the Vite
+   production build and writes `src/static/assets.ts` (base64 + ETag metadata).
+   This script also runs automatically via `predev`/`predeploy`, so `npm run dev`
+   and `npm run deploy` always embed the latest bundle.
+3. **Serve from Worker** – the Worker routes GET `/` and `/assets/*` through the
+   static asset map, attaching `Cache-Control` + `ETag` headers for efficient
+   browser caching without exposing the admin token.
+
+### Usage Highlights
+
+- **Stats Grid** – Files processed, vector count, and error totals updated every
+  30 seconds.
+- **Sync Status Panel** – Shows idle/in-progress/error badge, next cron countdown
+  (`17:00 UTC (01:00 KST)`), and last sync duration.
+- **Charts** – Sync history line chart + vector count bar chart sourced from
+  `/admin/history` for quick anomaly detection.
+- **Action Buttons** – `Refresh Now` re-pulls data, while `Trigger Manual Sync`
+  shows a styled modal dialog for admin token entry (persisted in `sessionStorage`
+  for security). The modal is non-blocking, async, and fully accessible.
+
+### Test Suite Coverage
+
+Run all dashboard tests with:
+
+```bash
+npm -w frontend run test
+```
+
+Key acceptance tests from SPEC-web-dashboard-1 are covered by:
+
+- `src/hooks/useApiQuery.test.ts` + `useSyncStatus.test.tsx` →
+  TEST-web-dashboard-4 (30s auto-refresh + error states)
+- `src/hooks/useNextSyncTime.test.ts` → TEST-web-dashboard-3 (next sync math)
+- `src/components/StatsCard.test.tsx` & `SyncStatusPanel.test.tsx` →
+  TEST-web-dashboard-2
+- `src/components/SyncHistoryChart.test.tsx` & `VectorCountChart.test.tsx` →
+  TEST-web-dashboard-5
+- `src/components/ActionButtons.test.tsx` → TEST-web-dashboard-6
+
+### Security Notes
+
+The dashboard implements several security measures:
+
+- **Token Storage**: Admin tokens are stored in `sessionStorage` (cleared on tab close)
+  instead of `localStorage` to minimize XSS exposure.
+- **Token Validation**: 401 responses automatically clear cached tokens, requiring
+  re-authentication.
+- **Runtime Validation**: All API responses are validated with Zod schemas to prevent
+  malformed data from causing UI issues.
+- **Error Handling**: User-friendly error messages prevent leaking internal details
+  while providing actionable feedback.
+
+**Security Best Practices**:
+- Only access the dashboard over HTTPS in production
+- Use strong, unique admin tokens (rotated regularly)
+- Clear browser session when finished to invalidate cached tokens
+- Monitor Worker logs for unauthorized access attempts
+
+### Frontend Troubleshooting
+
+- **Blank dashboard or 404s** – run `npm run build:frontend-assets` to refresh
+  `src/static/assets.ts` before `wrangler dev/deploy`.
+- **Manual sync keeps prompting** – check browser `sessionStorage` key
+  `dashboard_admin_token`; it auto-clears on tab close or you can manually clear it
+  to reprompt.
+- **Recharts "width(-1)" warning in tests** – this is expected in jsdom; the
+  runtime Worker build uses real layout sizes so the chart renders normally.
+- **Authentication errors** – if you see "Authentication failed", the token was
+  rejected by the server. The cached token is automatically cleared; try again with
+  the correct token.
+
+
 ## Setup
 
 ### Prerequisites

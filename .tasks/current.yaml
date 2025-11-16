@@ -1,20 +1,39 @@
 # Current Task
 # Only one task should be active at a time
 
-current_task: null
+current_task:
+  task_id: TASK-021
+  spec_id: SPEC-deployment-1
+  title: "Production deployment"
+  status: in_progress
+  started_at: "2025-11-15T13:48:01Z"
+  description: |
+    Deploy the Drive → Vectorize sync worker (including embedded dashboard)
+    to the production Cloudflare Workers environment. Configure all secrets,
+    KV namespaces, and Vectorize bindings, then verify admin APIs, dashboard,
+    manual sync trigger, and scheduled cron execution end-to-end.
+  test_refs:
+    - TEST-deployment-1
+    - TEST-deployment-2
+    - TEST-deployment-3
+    - TEST-deployment-4
+  notes: |
+    Resumed after dashboard tasks completed. Follow README deployment
+    guide and SPEC-deployment-1 acceptance tests—priority on wrangler
+    deploy, dashboard verification, manual sync dry-run, and cron logging.
 
 # Latest completed task:
-# - TASK-030: Implement dashboard UI components (SPEC-web-dashboard-1)
-# Completed at: 2025-11-15T21:15:00Z
+# - TASK-032: Web dashboard testing and documentation (SPEC-web-dashboard-1)
+# Completed at: 2025-11-15T13:48:01Z
 #
 # Changes implemented:
-# - Added vitest/jsdom test setup for frontend workspace
-# - Created custom hooks (useSyncStatus/useSyncStats/useSyncHistory/useNextSyncTime)
-# - Implemented StatsCard, SyncStatusPanel, charts, and ActionButtons components
-# - Built full dashboard layout with auto-refresh + manual sync controls
-# - Added frontend App + Vitest suites covering TEST-web-dashboard-2~6
-# - Documented npm -w frontend test workflow
+# - Added dedicated Vitest suites for dashboard hooks/components (StatsCard, SyncStatusPanel,
+#   charts, ActionButtons) covering TEST-web-dashboard-2~6.
+# - Created README "Dashboard Monitoring" section with build/embed workflow, commands,
+#   acceptance test mapping, and troubleshooting tips, plus docs/dashboard-preview.svg.
+# - Documented `npm run build:frontend-assets` so wrangler dev/deploy always bundle the
+#   latest frontend.
 #
 # Next priority (from backlog.yaml):
-# 1. TASK-031: Worker integration - serve static assets
-# 2. TASK-032: Web dashboard testing and documentation
+# 1. TASK-021: Production deployment (ACTIVE)
+# 2. TASK-033: Refactor folder structure (rename src/ → worker/)
