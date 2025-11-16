@@ -24,6 +24,7 @@ describe('Dashboard App', () => {
     isLocked: false,
     nextScheduledSync: '2025-11-15T17:00:00Z',
     lastSyncDuration: 60000,
+    totalFilesInDrive: 2500,
   };
 
   const mockStats = {

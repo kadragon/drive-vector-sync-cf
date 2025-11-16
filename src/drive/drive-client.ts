@@ -159,6 +159,76 @@ export class DriveClient {
   }
 
   /**
+   * Count total supported files in a folder (.md and .pdf)
+   * This is more efficient than listMarkdownFiles() when only the count is needed
+   */
+  async getTotalFileCount(rootFolderId: string): Promise<number> {
+    let count = 0;
+
+    try {
+      await this.countFilesInFolder(rootFolderId, (fileCount) => {
+        count += fileCount;
+      });
+      return count;
+    } catch (error) {
+      throw new DriveError('Failed to count supported files', {
+        rootFolderId,
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  /**
+   * Recursively count files in folder
+   */
+  private async countFilesInFolder(
+    folderId: string,
+    onCount: (count: number) => void
+  ): Promise<void> {
+    let pageToken: string | undefined;
+
+    do {
+      const response = await withRetry(async () => {
+        return await this.drive.files.list({
+          q: `'${folderId}' in parents and trashed=false`,
+          pageToken,
+          fields: 'nextPageToken, files(id, name, mimeType)',
+          pageSize: 100,
+        });
+      });
+
+      const items = response.data.files || [];
+      let fileCount = 0;
+
+      const subfolders: string[] = [];
+
+      for (const item of items) {
+        if (!item.id || !item.name) continue;
+
+        if (item.mimeType === 'application/vnd.google-apps.folder') {
+          // Collect subfolder IDs for recursive counting
+          subfolders.push(item.id);
+        } else if (this.isSupportedFile(item.name, item.mimeType)) {
+          // Count supported files (markdown or PDF)
+          fileCount++;
+        }
+      }
+
+      // Report count for this page
+      if (fileCount > 0) {
+        onCount(fileCount);
+      }
+
+      // Recursively count subfolders
+      for (const subfolderId of subfolders) {
+        await this.countFilesInFolder(subfolderId, onCount);
+      }
+
+      pageToken = response.data.nextPageToken || undefined;
+    } while (pageToken);
+  }
+
+  /**
    * Check if a file is a supported type (.md or .pdf)
    */
   private isSupportedFile(fileName: string, mimeType?: string | null): boolean {

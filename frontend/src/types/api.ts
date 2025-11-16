@@ -11,6 +11,7 @@ export const SyncStatusSchema = z.object({
   isLocked: z.boolean(),
   nextScheduledSync: z.string().nullable(),
   lastSyncDuration: z.number().nullable(),
+  totalFilesInDrive: z.number().nullable(),
 });
 
 export const SyncStatsSchema = z.object({
