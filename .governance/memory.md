@@ -897,3 +897,15 @@ Trace: { spec_id: SPEC-embedding-pipeline-1, task_id: TASK-036 }
 - Eliminates dimension mismatch error when creating new Vectorize indexes
 - Reduces embedding costs by 6.5x (from $0.00013 to $0.00002 per 1K tokens)
 - All documentation now accurately reflects production configuration
+
+### 2025-11-16: Admin status CPU limit mitigation (TASK-021) ✅
+Trace: { spec_id: SPEC-admin-api-1, task_id: TASK-021 }
+
+**Issue**: Production `/admin/status` returned 503 due to Cloudflare CPU limit exceeded; wrangler tail showed Drive total-file counting running on every poll.
+
+**Fix**:
+- Added optional `includeTotals=true` query flag; default status response skips Google Drive counting to keep latency/CPU minimal (`src/api/admin-handler.ts`).
+- Documented the flag and default lightweight behavior in README.
+- Added tests to ensure Drive counting is opt-in only (`src/api/admin-handler.test.ts`).
+
+**Testing**: `npm exec vitest run src/api/admin-handler.test.ts`.

@@ -2,24 +2,6 @@
 # Remaining pending tasks sorted by priority
 
 tasks:
-  - task_id: TASK-021
-    spec_id: SPEC-deployment-1
-    title: "Production deployment"
-    priority: 1
-    status: pending
-    dependencies: []
-    estimated_effort: 1.5 hours
-    description: |
-      Resume production verification once Zero Trust auth is in place: validate /admin/status and
-      /admin/resync with real auth, and observe first scheduled cron at 17:00 UTC.
-    test_refs:
-      - TEST-deployment-1
-      - TEST-deployment-2
-      - TEST-deployment-3
-      - TEST-deployment-4
-    notes: |
-      Paused awaiting Zero Trust rollout; health/dashboard already live at work.kadragon.work/*.
-
   - task_id: TASK-033
     spec_id: null
     title: "Refactor folder structure: rename src/ to worker/"

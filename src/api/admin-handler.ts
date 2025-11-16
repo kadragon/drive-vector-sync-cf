@@ -32,6 +32,7 @@ export class AdminHandler {
   async handleRequest(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
+    const includeTotals = url.searchParams.get('includeTotals') === 'true';
 
     try {
       // POST /admin/resync - Trigger full resync
@@ -41,7 +42,7 @@ export class AdminHandler {
 
       // GET /admin/status - Get sync status
       if (path === '/admin/status' && request.method === 'GET') {
-        return await this.handleStatus();
+        return await this.handleStatus(includeTotals);
       }
 
       // GET /admin/stats - Get collection statistics
@@ -104,18 +105,20 @@ export class AdminHandler {
   /**
    * Handle GET /admin/status
    */
-  private async handleStatus(): Promise<Response> {
+  private async handleStatus(includeTotals: boolean): Promise<Response> {
     const state = await this.stateManager.getState();
     const isLocked = await this.stateManager.isLocked();
     const nextScheduledSync = getNextCronExecution(getCronSchedule());
 
     // Get total file count from Google Drive
     let totalFilesInDrive: number | null = null;
-    try {
-      totalFilesInDrive = await this.driveClient.getTotalFileCount(this.rootFolderId);
-    } catch (error) {
-      console.error('Failed to get total file count from Drive:', error);
-      // Continue with null value to avoid blocking the entire status response
+    if (includeTotals) {
+      try {
+        totalFilesInDrive = await this.driveClient.getTotalFileCount(this.rootFolderId);
+      } catch (error) {
+        console.error('Failed to get total file count from Drive:', error);
+        // Continue with null value to avoid blocking the entire status response
+      }
     }
 
     return this.jsonResponse({
