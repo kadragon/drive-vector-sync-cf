@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, vi, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useNextSyncTime } from './useNextSyncTime';

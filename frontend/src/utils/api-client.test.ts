@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fetchJson, ApiError } from './api-client';
 import { z } from 'zod';
@@ -52,7 +53,9 @@ describe('fetchJson', () => {
       json: async () => ({}),
     });
 
-    await expect(fetchJson('/test')).rejects.toThrow('Access forbidden. You do not have permission.');
+    await expect(fetchJson('/test')).rejects.toThrow(
+      'Access forbidden. You do not have permission.'
+    );
   });
 
   it('throws ApiError with user-friendly message on 404', async () => {
@@ -91,7 +94,9 @@ describe('fetchJson', () => {
   it('handles network errors', async () => {
     global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
 
-    await expect(fetchJson('/test')).rejects.toThrow('Network error. Please check your connection.');
+    await expect(fetchJson('/test')).rejects.toThrow(
+      'Network error. Please check your connection.'
+    );
   });
 
   it('handles abort errors', async () => {
