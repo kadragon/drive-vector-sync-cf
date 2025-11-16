@@ -751,3 +751,21 @@ Build Verification:
   - Production deployment: ~3 hours (TASK-021)
   - Web dashboard UI: ~10 hours (TASK-030 ~ TASK-032)
 - **Cost Optimization:** 80-90% reduction in embedding API calls for updates + eliminated Qdrant Cloud costs
+
+### 2025-11-16: Coverage Snapshot & Gaps (TASK-021) 📈
+Trace: { spec_id: SPEC-deployment-1, task_id: TASK-021 }
+
+- Ran coverage for backend and frontend to baseline before production rollout.
+  - Backend (root Vitest): lines 75.68%, statements 75.72%, branches 59.04%, functions 81.69%.
+  - Frontend (Vitest jsdom): lines/statements 94.47%, branches 92.66%, functions 93.33%.
+- Lowest backend coverage files and uncovered line clusters to target next:
+  - `src/monitoring/alerting.ts` (≈16% lines) — lines 32–57, 73–89, 144, 191–192.
+  - `src/vectorize/vectorize-client.ts` (≈53% lines) — lines 56–68, 115, 138, 151–169.
+  - `src/drive/drive-client.ts` (≈59% lines) — lines 125–154, 183–196.
+- Lowest frontend coverage spots:
+  - `frontend/src/utils/format.ts` (≈78% lines) — date/count formatting branches (lines 16–116 range).
+  - `frontend/src/App.tsx` (≈87% lines) — conditional layouts for stats/chart visibility (lines 50–62, 96–98).
+  - `frontend/src/utils/api-client.ts` (≈92% lines) — error handling paths (lines 48–93).
+- Dependencies added to enable coverage reports:
+  - Root dev: `@vitest/coverage-v8` (aligned with Vitest 4).
+  - Frontend dev: `@vitest/coverage-v8@2.1.9` (aligned with Vitest 2 workspace).

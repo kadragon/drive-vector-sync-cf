@@ -7,9 +7,9 @@
 
 /**
  * OpenAI pricing (as of 2025)
- * text-embedding-3-large: $0.00013 per 1K tokens
+ * text-embedding-3-small: $0.00002 per 1K tokens
  */
-const OPENAI_EMBEDDING_COST_PER_1K_TOKENS = 0.00013;
+const OPENAI_EMBEDDING_COST_PER_1K_TOKENS = 0.00002;
 
 /**
  * Google Drive API quota limits

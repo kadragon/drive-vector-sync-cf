@@ -6,7 +6,7 @@
  *   task_id: TASK-001, TASK-002, TASK-003, TASK-024
  */
 
-import { google, drive_v3 } from 'googleapis';
+import { drive_v3, drive } from '@googleapis/drive';
 import { JWT } from 'google-auth-library';
 import { DriveError } from '../errors/index.js';
 import { withRetry } from '../errors/index.js';
@@ -63,14 +63,14 @@ export class DriveClient {
 
   constructor(credentials: DriveCredentials) {
     // Create JWT client for Service Account authentication
-    this.auth = new google.auth.JWT({
+    this.auth = new JWT({
       email: credentials.clientEmail,
       key: credentials.privateKey,
       scopes: DriveClient.DRIVE_SCOPES,
       subject: credentials.subject, // For domain-wide delegation
     });
 
-    this.drive = google.drive({ version: 'v3', auth: this.auth });
+    this.drive = drive({ version: 'v3', auth: this.auth });
     this.folderCache = new Map();
     this.pathCache = new Map();
   }

@@ -24,8 +24,8 @@ vi.mock('openai', () => {
 });
 
 // Constants
-const DEFAULT_EMBEDDING_DIMENSIONS = 3072;
-const CUSTOM_EMBEDDING_DIMENSIONS = 1536;
+const DEFAULT_EMBEDDING_DIMENSIONS = 1536;
+const CUSTOM_EMBEDDING_DIMENSIONS = 768;
 
 describe('EmbeddingClient', () => {
   let client: EmbeddingClient;
@@ -81,7 +81,7 @@ describe('EmbeddingClient', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual(mockEmbedding);
       expect(mockCreate).toHaveBeenCalledWith({
-        model: 'text-embedding-3-large',
+        model: 'text-embedding-3-small',
         input: ['Hello world'],
         dimensions: DEFAULT_EMBEDDING_DIMENSIONS,
       });
@@ -169,7 +169,7 @@ describe('EmbeddingClient', () => {
 
       expect(result).toEqual(mockEmbedding);
       expect(mockCreate).toHaveBeenCalledWith({
-        model: 'text-embedding-3-large',
+        model: 'text-embedding-3-small',
         input: ['Single text'],
         dimensions: DEFAULT_EMBEDDING_DIMENSIONS,
       });

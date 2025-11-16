@@ -5,19 +5,18 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DriveClient } from './drive-client.js';
-import { google } from 'googleapis';
+import { drive } from '@googleapis/drive';
 
-// Mock googleapis with proper class mocking for Vitest 4.x
-vi.mock('googleapis', () => ({
-  google: {
-    auth: {
-      JWT: class MockJWT {
-        constructor() {
-          // Mock JWT constructor
-        }
-      },
-    },
-    drive: vi.fn(),
+// Mock @googleapis/drive with proper class mocking for Vitest 4.x
+vi.mock('@googleapis/drive', () => ({
+  drive: vi.fn(),
+}));
+
+vi.mock('google-auth-library', () => ({
+  JWT: class MockJWT {
+    constructor() {
+      // Mock JWT constructor
+    }
   },
 }));
 
@@ -42,7 +41,7 @@ describe('DriveClient - Path Building and Filtering', () => {
       },
     };
 
-    vi.mocked(google.drive).mockReturnValue(mockDrive as any);
+    vi.mocked(drive).mockReturnValue(mockDrive as any);
 
     driveClient = new DriveClient(mockServiceAccountCredentials);
   });

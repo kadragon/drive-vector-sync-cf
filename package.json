@@ -40,6 +40,7 @@
     "@types/node": "24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.17.0",
     "@typescript-eslint/parser": "^8.17.0",
+    "@vitest/coverage-v8": "^4.0.9",
     "eslint": "^9.15.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.6",
@@ -49,10 +50,9 @@
     "wrangler": "^4.48.0"
   },
   "dependencies": {
-    "googleapis": "166.0.0",
+    "@googleapis/drive": "^19.2.0",
     "openai": "^6.9.0",
-    "pdfjs-dist": "^4.10.38",
-    "tiktoken": "^1.0.18"
+    "pdfjs-dist": "^4.10.38"
   },
   "lint-staged": {
     "*.ts": [

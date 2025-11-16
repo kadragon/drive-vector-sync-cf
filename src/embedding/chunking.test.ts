@@ -93,8 +93,9 @@ describe('Chunking Module', () => {
       const longText = 'word '.repeat(100);
       const count = countTokens(longText);
 
-      expect(count).toBeGreaterThan(90); // Should be around 100
-      expect(count).toBeLessThan(110);
+      // Approximate counting: ~4 chars/token, so 500 chars ≈ 125 tokens
+      expect(count).toBeGreaterThan(100);
+      expect(count).toBeLessThan(150);
     });
   });
 
@@ -124,6 +125,21 @@ describe('Chunking Module', () => {
   });
 
   describe('Edge cases', () => {
+    it('should handle whitespace-heavy inputs without bypassing maxTokens', () => {
+      // Create text with long runs of whitespace (e.g., indented logs)
+      // This should trigger chunking even though compressed char count is low
+      const heavyWhitespace = '    '.repeat(3000) + 'content\n'; // 12000 spaces + content
+      const chunks = chunkText(heavyWhitespace, 2000);
+
+      // With maxTokens=2000 and ~4 chars/token, maxChars=8000
+      // Input is 12007 chars, so should be split even though compressed is small
+      expect(chunks.length).toBeGreaterThan(1);
+      chunks.forEach(chunk => {
+        // Each chunk should respect the raw length limit
+        expect(chunk.text.length).toBeLessThanOrEqual(2000 * 4);
+      });
+    });
+
     it('should handle text with special characters', () => {
       const text = '你好世界 Hello 🌍 مرحبا';
       const chunks = chunkText(text, 2000);

@@ -35,7 +35,7 @@ describe('CostTracker', () => {
       const metrics = tracker.getMetrics();
       expect(metrics.openai.totalTokens).toBe(1000);
       expect(metrics.openai.embeddingCalls).toBe(1);
-      expect(metrics.openai.totalCost).toBeCloseTo(0.00013, 6);
+      expect(metrics.openai.totalCost).toBeCloseTo(0.00002, 6);
     });
 
     it('should accumulate multiple embedding calls', () => {
@@ -46,14 +46,14 @@ describe('CostTracker', () => {
       const metrics = tracker.getMetrics();
       expect(metrics.openai.totalTokens).toBe(3500);
       expect(metrics.openai.embeddingCalls).toBe(3);
-      expect(metrics.openai.totalCost).toBeCloseTo(0.000455, 6);
+      expect(metrics.openai.totalCost).toBeCloseTo(0.00007, 6);
     });
 
     it('should calculate cost correctly for large token counts', () => {
       tracker.recordEmbeddingUsage(100000); // 100K tokens
 
       const metrics = tracker.getMetrics();
-      expect(metrics.openai.totalCost).toBeCloseTo(0.013, 4);
+      expect(metrics.openai.totalCost).toBeCloseTo(0.002, 4);
     });
   });
 
@@ -117,7 +117,7 @@ describe('CostTracker', () => {
       const summary = tracker.getSummary();
 
       expect(summary).toContain('10,000 tokens');
-      expect(summary).toContain('$0.0013');
+      expect(summary).toContain('$0.0002');
       expect(summary).toContain('1 queries');
       expect(summary).toContain('1 operations');
     });
@@ -133,10 +133,10 @@ describe('CostTracker', () => {
 
       expect(breakdown.openai.tokens).toBe(5000);
       expect(breakdown.openai.calls).toBe(1);
-      expect(breakdown.openai.cost).toBeCloseTo(0.00065, 6);
+      expect(breakdown.openai.cost).toBeCloseTo(0.0001, 6);
       expect(breakdown.drive.queries).toBe(1);
       expect(breakdown.vectorIndex.operations).toBe(1);
-      expect(breakdown.total.openaiCost).toBeCloseTo(0.00065, 6);
+      expect(breakdown.total.openaiCost).toBeCloseTo(0.0001, 6);
     });
   });
 });

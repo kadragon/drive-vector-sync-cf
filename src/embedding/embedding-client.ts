@@ -22,8 +22,8 @@ export interface EmbeddingConfig {
   dimensions?: number;
 }
 
-const DEFAULT_MODEL = 'text-embedding-3-large';
-const DEFAULT_DIMENSIONS = 3072;
+const DEFAULT_MODEL = 'text-embedding-3-small';
+const DEFAULT_DIMENSIONS = 1536;
 
 /**
  * OpenAI embedding client

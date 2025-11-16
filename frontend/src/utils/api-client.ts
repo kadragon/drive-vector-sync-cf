@@ -7,13 +7,18 @@
 import { z } from 'zod';
 
 export class ApiError extends Error {
+  status?: number;
+  code?: string;
+
   constructor(
     message: string,
-    public status?: number,
-    public code?: string
+    status?: number,
+    code?: string
   ) {
     super(message);
     this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
   }
 }
 
@@ -76,9 +81,10 @@ export async function fetchJson<T>(
         return schema.parse(payload);
       } catch (err) {
         if (err instanceof z.ZodError) {
-          console.error('API response validation failed:', err.errors);
+          const zodErr = err as z.ZodError;
+          console.error('API response validation failed:', zodErr.issues);
           throw new ApiError(
-            `Invalid API response format: ${err.errors.map(e => e.message).join(', ')}`,
+            `Invalid API response format: ${zodErr.issues.map((e: z.ZodIssue) => e.message).join(', ')}`,
             undefined,
             'VALIDATION_ERROR'
           );
