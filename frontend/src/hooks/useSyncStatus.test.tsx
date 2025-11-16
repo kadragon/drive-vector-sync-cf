@@ -22,6 +22,7 @@ describe('useSyncStatus', () => {
     isLocked: false,
     nextScheduledSync: '2025-11-15T17:00:00Z',
     lastSyncDuration: 45000,
+    totalFilesInDrive: 100,
   } as const;
 
   beforeEach(() => {

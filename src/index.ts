@@ -112,6 +112,7 @@ function initializeServices(env: Env, request: Request) {
     orchestrator,
     stateManager,
     vectorClient,
+    driveClient,
     env.GOOGLE_ROOT_FOLDER_ID,
     request
   );

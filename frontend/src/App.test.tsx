@@ -7,11 +7,14 @@ import App from './App';
 /**
  * Trace:
  *   spec_id: SPEC-web-dashboard-1
- *   task_id: TASK-030
+ *   task_id:
+ *     - TASK-030
+ *     - TASK-039
  *   test_refs:
  *     - TEST-web-dashboard-2
  *     - TEST-web-dashboard-3
  *     - TEST-web-dashboard-5
+ *     - TEST-web-dashboard-7
  */
 
 describe('Dashboard App', () => {
@@ -24,6 +27,7 @@ describe('Dashboard App', () => {
     isLocked: false,
     nextScheduledSync: '2025-11-15T17:00:00Z',
     lastSyncDuration: 60000,
+    totalFilesInDrive: 2500,
   };
 
   const mockStats = {
@@ -89,6 +93,15 @@ describe('Dashboard App', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('shows 업무노트 관리-oriented navbar title', async () => {
+    const fetchMock = installFetchMock();
+    render(<App />);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    expect(screen.getByText('업무노트 관리 대시보드')).toBeTruthy();
   });
 
   it('renders dashboard stats, charts, and next sync schedule info', async () => {

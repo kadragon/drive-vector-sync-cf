@@ -2,6 +2,19 @@
 # Tasks are moved here when completed
 
 completed_tasks:
+  - task_id: TASK-039
+    spec_id: SPEC-web-dashboard-1
+    title: "Rebrand dashboard title around 업무노트 관리"
+    completed_at: "2025-11-16T09:38:04Z"
+    duration: "0.1 hours"
+    outcome: "Updated dashboard navbar title to '업무노트 관리 대시보드' with accompanying spec and test coverage."
+    tests_passed:
+      - npm exec vitest run frontend/src/App.test.tsx
+    notes: |
+      - Added TEST-web-dashboard-7 acceptance coverage in spec for branding.
+      - Introduced navbar title assertion in App.test.tsx.
+      - Updated App.tsx navbar text and trace metadata.
+
   - task_id: TASK-034
     spec_id: SPEC-embedding-pipeline-1
     title: "Integrate Cloudflare AI Gateway for all OpenAI Calls"

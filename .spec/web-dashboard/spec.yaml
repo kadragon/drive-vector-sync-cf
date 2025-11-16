@@ -38,6 +38,10 @@ given_when_then:
     when: "POST /admin/resync is called with admin token"
     then: "Show confirmation and refresh status after completion"
 
+  - given: "User opens the dashboard"
+    when: "Navbar renders"
+    then: "Show a title that conveys '업무노트 관리' focus"
+
 acceptance_tests:
   - id: TEST-web-dashboard-1
     desc: "Root endpoint (GET /) serves HTML with React app"
@@ -88,9 +92,16 @@ acceptance_tests:
       - "Send POST /admin/resync with Bearer token"
       - "Verify response and show success/error message"
 
-ui_components:
+  - id: TEST-web-dashboard-7
+    desc: "Navbar shows 업무노트 관리-oriented title"
+    steps:
+      - "Render dashboard"
+      - "Verify navbar title conveys 업무노트 관리 management"
+      - "Ensure title remains visible in mobile and desktop layouts"
+
+  ui_components:
   layout:
-    - header: "Drive Vector Sync Dashboard"
+    - header: "업무노트 관리 대시보드"
     - stats_cards:
         - last_sync_time: "Last Sync: 2 hours ago"
         - files_processed: "Files: 150"
@@ -180,3 +191,4 @@ linked_tasks:
   - TASK-029
   - TASK-030
   - TASK-031
+  - TASK-039

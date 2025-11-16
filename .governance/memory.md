@@ -96,6 +96,16 @@
 **Testing**:
 - `npm exec vitest run src/auth/zt-validator.test.ts`
 
+### 2025-11-16: Dashboard title rebrand (TASK-039) ✅
+
+**Achievement**: Shifted dashboard navbar branding to "업무노트 관리 대시보드" to emphasize worknote management focus.
+
+**Testing**:
+- `npm exec vitest run frontend/src/App.test.tsx` (added navbar title assertion; existing jsdom Recharts size warnings remain cosmetic)
+
+**Notes**:
+- Updated SPEC-web-dashboard-1 acceptance criteria (TEST-web-dashboard-7) and UI header string.
+
 ### 2025-11-15: Dashboard UI Foundations (TASK-030) ✅
 
 **Achievement**: Delivered fully interactive React dashboard (SPEC-web-dashboard-1) with live sync stats, charts, and manual controls embedded in `/frontend`.

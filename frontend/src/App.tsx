@@ -15,12 +15,15 @@ import './App.css';
 /**
  * Trace:
  *   spec_id: SPEC-web-dashboard-1
- *   task_id: TASK-030
+ *   task_id:
+ *     - TASK-030
+ *     - TASK-039
  *   test_refs:
  *     - TEST-web-dashboard-2
  *     - TEST-web-dashboard-3
  *     - TEST-web-dashboard-5
  *     - TEST-web-dashboard-6
+ *     - TEST-web-dashboard-7
  */
 
 function App() {
@@ -67,6 +70,8 @@ function App() {
   const filesProcessed = formatNumber(statusData?.filesProcessed ?? 0);
   const vectorCount = formatNumber(statsData?.vectorCount ?? 0);
   const errorCount = formatNumber(statusData?.errorCount ?? 0);
+  const totalFilesInDrive = statusData?.totalFilesInDrive ?? null;
+  const totalFilesFormatted = totalFilesInDrive !== null ? formatNumber(totalFilesInDrive) : '--';
 
   const isSyncing = statusData?.isLocked ?? false;
 
@@ -76,7 +81,7 @@ function App() {
     <div className="min-h-screen bg-base-200">
       <div className="navbar bg-base-100 shadow-lg">
         <div className="flex-1">
-          <span className="btn btn-ghost text-xl">Drive Vector Sync Dashboard</span>
+          <span className="btn btn-ghost text-xl">업무노트 관리 대시보드</span>
         </div>
         <div className="flex-none">
           <label className="swap swap-rotate btn btn-ghost btn-circle" title="Toggle theme">
@@ -98,9 +103,10 @@ function App() {
           </div>
         )}
 
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" data-testid="dashboard-stats">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4" data-testid="dashboard-stats">
           <StatsCard title="Last Sync" value={isStatusLoading ? '--' : lastSyncRelative} description={lastSyncExact} tone="primary" />
           <StatsCard title="Files Processed" value={isStatusLoading ? '--' : filesProcessed} description="From last sync" tone="secondary" />
+          <StatsCard title="Total Files in Drive" value={isStatusLoading ? '--' : totalFilesFormatted} description="Google Drive folder" tone="info" />
           <StatsCard title="Vector Count" value={isStatsLoading ? '--' : vectorCount} description={statsData?.collection ?? 'Vectorize index'} tone="info" />
           <StatsCard title="Errors" value={isStatusLoading ? '--' : errorCount} description="Last 24h" tone="error" />
         </section>

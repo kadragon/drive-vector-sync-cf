@@ -11,6 +11,7 @@ import { AdminHandler } from './admin-handler';
 import { SyncOrchestrator, SyncResult } from '../sync/sync-orchestrator';
 import { KVStateManager, SyncState } from '../state/kv-state-manager';
 import { VectorStoreClient } from '../types/vector-store';
+import { DriveClient } from '../drive/drive-client';
 
 // Define response types for better type safety
 interface AdminStatusResponse {
@@ -146,17 +147,31 @@ class MockVectorClient {
   }
 }
 
+class MockDriveClient {
+  private totalFileCount = 250;
+
+  setTotalFileCount(count: number) {
+    this.totalFileCount = count;
+  }
+
+  async getTotalFileCount(_rootFolderId: string): Promise<number> {
+    return this.totalFileCount;
+  }
+}
+
 describe('AdminHandler', () => {
   let handler: AdminHandler;
   let orchestrator: MockSyncOrchestrator;
   let stateManager: MockKVStateManager;
   let vectorClient: MockVectorClient;
+  let driveClient: MockDriveClient;
   const rootFolderId = 'root-folder-123';
 
   beforeEach(() => {
     orchestrator = new MockSyncOrchestrator();
     stateManager = new MockKVStateManager();
     vectorClient = new MockVectorClient();
+    driveClient = new MockDriveClient();
 
     // Create a dummy request for AdminHandler constructor
     const dummyRequest = new Request('http://localhost');
@@ -165,6 +180,7 @@ describe('AdminHandler', () => {
       orchestrator as unknown as SyncOrchestrator,
       stateManager as unknown as KVStateManager,
       vectorClient as unknown as VectorStoreClient,
+      driveClient as unknown as DriveClient,
       rootFolderId,
       dummyRequest
     );

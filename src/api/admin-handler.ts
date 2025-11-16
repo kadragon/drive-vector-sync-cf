@@ -9,6 +9,7 @@
 import { SyncOrchestrator } from '../sync/sync-orchestrator.js';
 import { KVStateManager } from '../state/kv-state-manager.js';
 import { VectorStoreClient } from '../types/vector-store.js';
+import { DriveClient } from '../drive/drive-client.js';
 import { getNextCronExecution, getCronSchedule } from '../utils/cron.js';
 import { buildCorsHeaders } from '../utils/cors.js';
 
@@ -20,6 +21,7 @@ export class AdminHandler {
     private orchestrator: SyncOrchestrator,
     private stateManager: KVStateManager,
     private vectorClient: VectorStoreClient,
+    private driveClient: DriveClient,
     private rootFolderId: string,
     private request: Request
   ) {}
@@ -107,6 +109,15 @@ export class AdminHandler {
     const isLocked = await this.stateManager.isLocked();
     const nextScheduledSync = getNextCronExecution(getCronSchedule());
 
+    // Get total file count from Google Drive
+    let totalFilesInDrive: number | null = null;
+    try {
+      totalFilesInDrive = await this.driveClient.getTotalFileCount(this.rootFolderId);
+    } catch (error) {
+      console.error('Failed to get total file count from Drive:', error);
+      // Continue with null value to avoid blocking the entire status response
+    }
+
     return this.jsonResponse({
       status: 'ok',
       lastSyncTime: state.lastSyncTime,
@@ -116,6 +127,7 @@ export class AdminHandler {
       isLocked,
       nextScheduledSync,
       lastSyncDuration: state.lastSyncDuration || null,
+      totalFilesInDrive,
     });
   }
 
