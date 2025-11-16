@@ -93,8 +93,9 @@ describe('Chunking Module', () => {
       const longText = 'word '.repeat(100);
       const count = countTokens(longText);
 
-      expect(count).toBeGreaterThan(90); // Should be around 100
-      expect(count).toBeLessThan(110);
+      // Approximate counting: ~4 chars/token, so 500 chars ≈ 125 tokens
+      expect(count).toBeGreaterThan(100);
+      expect(count).toBeLessThan(150);
     });
   });
 

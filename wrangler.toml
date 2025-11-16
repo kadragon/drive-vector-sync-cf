@@ -6,14 +6,14 @@ compatibility_flags = ["nodejs_compat"]
 # KV Namespace for state persistence
 [[kv_namespaces]]
 binding = "WORKNOTE_SYNC_STATE"
-id = "PLACEHOLDER_KV_ID"
-preview_id = "PLACEHOLDER_PREVIEW_KV_ID"
+id = "49ef47530b4d42aaa54be79c584a18e6"
+preview_id = "25a372d46cde40ae94ee1c64b00a0fb2"
 
 # KV Namespace for file-to-vector ID mapping (Vectorize migration)
 [[kv_namespaces]]
 binding = "WORKNOTE_FILE_VECTOR_INDEX"
-id = "PLACEHOLDER_FILE_INDEX_ID"
-preview_id = "PLACEHOLDER_FILE_INDEX_PREVIEW_ID"
+id = "8a9adb1a58f24e089c2c8ff8a67c87a5"
+preview_id = "b8133f510a91413eadc5354569d6cace"
 
 # Cloudflare Vectorize binding (replaces Qdrant)
 [[vectorize]]
@@ -36,9 +36,6 @@ crons = ["0 17 * * *"]
 # - WEBHOOK_URL (for Slack/Discord alerts)
 # - WEBHOOK_TYPE (slack or discord)
 # - PERFORMANCE_THRESHOLD (files/sec, default: 0.5)
-
-# Node.js compatibility for googleapis and other packages
-node_compat = true
 
 # Environment variables (non-sensitive)
 [vars]
