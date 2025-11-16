@@ -758,6 +758,25 @@ Trace: { spec_id: SPEC-deployment-1, task_id: TASK-021 }
 - Ran coverage for backend and frontend to baseline before production rollout.
   - Backend (root Vitest): lines 75.68%, statements 75.72%, branches 59.04%, functions 81.69%.
   - Frontend (Vitest jsdom): lines/statements 94.47%, branches 92.66%, functions 93.33%.
+
+### 2025-11-16: Production Deploy (TASK-021) ♻️
+Trace: { spec_id: SPEC-deployment-1, task_id: TASK-021 }
+
+- Updated wrangler.toml for production: added account_id, switched to placement syntax, wired real preview KV IDs, set CHUNK_SIZE=2000, and corrected route format (zone_name for work.kadragon.work/*).
+- Vectorize index recreated as `worknote-store` at 1536 dims (Cloudflare Vectorize enforces 32–1536) after failed attempt to provision 3072; bindings confirmed in deploy output.
+- Deployed via `npm run deploy` (Wrangler 4.48.0). Workers.dev URL: https://worknote-maker-cf.kangdongouk.workers.dev, custom route now active at https://work.kadragon.work/* (verified /health and dashboard HTML return 200).
+- Test passes: backend `npm exec vitest run src/**/*.test.ts` and frontend `npm -w frontend test` after rebuilding embedded assets.
+- Outstanding: cannot verify /admin/status or /admin/resync without ADMIN_TOKEN value (secret exists but unreadable). Need token to trigger manual resync and to tail first scheduled cron at 17:00 UTC.
+
+### 2025-11-16: Zero Trust Auth Enablement (TASK-035) 🚧
+Trace: { spec_id: SPEC-security-zt-1, task_id: TASK-035 }
+
+- Implemented jose-based Cloudflare Access JWT validator (`src/auth/zt-validator.ts`) with cached JWKS fetch and tests (TEST-zt-auth-1~5).
+- Replaced ADMIN_TOKEN auth in `src/index.ts` with `requireAccessJwt`; Env now requires `CF_ACCESS_TEAM_DOMAIN` and `CF_ACCESS_AUD_TAG` secrets.
+- Updated E2E tests to expect `CF_Authorization` header; added dedicated validator unit tests using local JWK set.
+- Frontend ActionButtons no longer prompt for admin token; manual sync posts directly to `/admin/resync`.
+- Wrangler config documented new secrets; Zero Trust inputs received: team domain `kadragon.cloudflareaccess.com`, AUD tag provided.
+- Deployed with Access secrets set; `/health` now 302 to Access login (expected). TASK-035 completed.
 - Lowest backend coverage files and uncovered line clusters to target next:
   - `src/monitoring/alerting.ts` (≈16% lines) — lines 32–57, 73–89, 144, 191–192.
   - `src/vectorize/vectorize-client.ts` (≈53% lines) — lines 56–68, 115, 138, 151–169.

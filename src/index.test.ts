@@ -10,79 +10,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateAdminToken } from './api/admin-handler';
 
 describe('Worker Entry Point', () => {
-  describe('Token Validation', () => {
-    it('should accept valid Bearer tokens', () => {
-      const request = new Request('http://localhost/admin/status', {
-        headers: {
-          Authorization: 'Bearer secret-token-123',
-        },
-      });
-
-      const result = validateAdminToken(request, 'secret-token-123');
-
-      expect(result).toBe(true);
-    });
-
-    it('should reject invalid tokens', () => {
-      const request = new Request('http://localhost/admin/status', {
-        headers: {
-          Authorization: 'Bearer wrong-token',
-        },
-      });
-
-      const result = validateAdminToken(request, 'secret-token-123');
-
-      expect(result).toBe(false);
-    });
-
-    it('should reject missing Authorization header', () => {
-      const request = new Request('http://localhost/admin/status');
-
-      const result = validateAdminToken(request, 'secret-token-123');
-
-      expect(result).toBe(false);
-    });
-
-    it('should handle malformed Authorization headers', () => {
-      const request = new Request('http://localhost/admin/status', {
-        headers: {
-          Authorization: 'InvalidFormat',
-        },
-      });
-
-      const result = validateAdminToken(request, 'secret-token-123');
-
-      expect(result).toBe(false);
-    });
-
-    it('should handle empty token', () => {
-      const request = new Request('http://localhost/admin/status', {
-        headers: {
-          Authorization: 'Bearer ',
-        },
-      });
-
-      const result = validateAdminToken(request, 'secret-token-123');
-
-      expect(result).toBe(false);
-    });
-
-    it('should be case-sensitive for Bearer keyword', () => {
-      const request = new Request('http://localhost/admin/status', {
-        headers: {
-          Authorization: 'bearer secret-token-123', // lowercase
-        },
-      });
-
-      const result = validateAdminToken(request, 'secret-token-123');
-
-      // Should fail because of case mismatch
-      expect(result).toBe(false);
-    });
-  });
 
   describe('Environment Configuration', () => {
     it('should parse numeric environment variables correctly', () => {

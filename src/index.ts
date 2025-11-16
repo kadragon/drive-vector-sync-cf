@@ -15,7 +15,8 @@ import { EmbeddingClient } from './embedding/embedding-client.js';
 import { VectorizeClient } from './vectorize/vectorize-client.js';
 import { KVStateManager } from './state/kv-state-manager.js';
 import { SyncOrchestrator } from './sync/sync-orchestrator.js';
-import { AdminHandler, validateAdminToken } from './api/admin-handler.js';
+import { AdminHandler } from './api/admin-handler.js';
+import { requireAccessJwt, unauthorizedResponse } from './auth/zt-validator.js';
 import { logError } from './errors/index.js';
 import { resolveAssetPath, serveStaticAsset } from './static/server.js';
 import type { VectorizeIndex } from './types/vectorize.js';
@@ -33,7 +34,8 @@ export interface Env {
   GOOGLE_IMPERSONATION_EMAIL?: string;
   GOOGLE_ROOT_FOLDER_ID: string;
   OPENAI_API_KEY: string;
-  ADMIN_TOKEN: string;
+  CF_ACCESS_TEAM_DOMAIN: string;
+  CF_ACCESS_AUD_TAG: string;
 
   // Environment variables
   CHUNK_SIZE: string;
@@ -161,13 +163,12 @@ export default {
       return serveStaticAsset(request, assetPath);
     }
 
-    // Admin endpoints require authentication
+    // Admin endpoints require Cloudflare Zero Trust authentication
     if (url.pathname.startsWith('/admin')) {
-      if (!validateAdminToken(request, env.ADMIN_TOKEN)) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        });
+      try {
+        await requireAccessJwt(request, env);
+      } catch (error) {
+        return unauthorizedResponse((error as Error).message);
       }
 
       // Handle admin API requests

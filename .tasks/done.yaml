@@ -63,6 +63,21 @@ completed_tasks:
     notes: |
       Enhanced README.md with production-ready deployment documentation.
 
+  - task_id: TASK-035
+    spec_id: SPEC-security-zt-1
+    title: "Implement Cloudflare Zero Trust Access for UI and API"
+    completed_at: "2025-11-16T06:18:00Z"
+    duration: "0.8 hours"
+    outcome: "Admin/API now protected by Cloudflare Access JWTs; dashboard uses Access session instead of static token."
+    tests_passed:
+      - npm test
+      - npm exec vitest run src/auth/zt-validator.test.ts
+    notes: |
+      - Added jose-based validator with JWKS cache (`src/auth/zt-validator.ts`), wired to `/admin` routes.
+      - Updated frontend manual sync to drop token prompts; relies on Access session cookie.
+      - E2E tests updated to use CF_Authorization; new unit tests cover issuer/audience rejection.
+      - Deployment refreshed with Access secrets set (CF_ACCESS_TEAM_DOMAIN, CF_ACCESS_AUD_TAG) and confirmed Access 302 on /health.
+
       Documentation Coverage:
       - Google Service Account Setup (4 subsections):
         * Step-by-step Service Account creation in Google Cloud Console

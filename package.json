@@ -51,6 +51,7 @@
   },
   "dependencies": {
     "@googleapis/drive": "^19.2.0",
+    "jose": "^5.8.0",
     "openai": "^6.9.0",
     "pdfjs-dist": "^4.10.38"
   },

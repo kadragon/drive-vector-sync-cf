@@ -1,50 +1,43 @@
 name = "worknote-maker-cf"
 main = "src/index.ts"
+account_id = "6ed03d41ee9287a3e0e5bde9a6772812"
 compatibility_date = "2024-11-13"
 compatibility_flags = ["nodejs_compat"]
-smart_placement = true
+placement = { mode = "smart" }
 
-# KV Namespace for state persistence
 [[kv_namespaces]]
 binding = "WORKNOTE_SYNC_STATE"
 id = "49ef47530b4d42aaa54be79c584a18e6"
-preview_id = "PLACEHOLDER_PREVIEW_KV_ID"
+preview_id = "25a372d46cde40ae94ee1c64b00a0fb2"
 
-# KV Namespace for file-to-vector ID mapping (Vectorize migration)
 [[kv_namespaces]]
 binding = "WORKNOTE_FILE_VECTOR_INDEX"
 id = "8a9adb1a58f24e089c2c8ff8a67c87a5"
-preview_id = "PLACEHOLDER_FILE_INDEX_PREVIEW_ID"
+preview_id = "b8133f510a91413eadc5354569d6cace"
 
-# Cloudflare Vectorize binding (replaces Qdrant)
 [[vectorize]]
 binding = "VECTORIZE"
 index_name = "worknote-store"
 
-# Cron trigger - Daily at 17:00 UTC (01:00 KST next day)
+# Cron trigger - Daily at 17:00 UTC (01:00 KST)
 [triggers]
 crons = ["0 17 * * *"]
 
-# Secrets (set via: wrangler secret put <SECRET_NAME>)
-# Required:
-# - GOOGLE_SERVICE_ACCOUNT_JSON (Service Account JSON from Google Cloud Console)
-# - GOOGLE_ROOT_FOLDER_ID
-# - OPENAI_API_KEY
-# - ADMIN_TOKEN
-#
-# Optional:
-# - GOOGLE_IMPERSONATION_EMAIL (for domain-wide delegation)
-# - WEBHOOK_URL (for Slack/Discord alerts)
-# - WEBHOOK_TYPE (slack or discord)
-# - PERFORMANCE_THRESHOLD (files/sec, default: 0.5)
-
-# Environment variables (non-sensitive)
 [vars]
-CHUNK_SIZE = "1000"
+CHUNK_SIZE = "2000"
 MAX_BATCH_SIZE = "32"
 MAX_CONCURRENCY = "4"
 MAX_RETRIES = "3"
 INDEX_NAME = "worknote-store"
+
+routes = [
+  { pattern = "work.kadragon.work/*", zone_name = "kadragon.work" }
+]
+
+# Secrets to configure via wrangler secrets:
+# GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_ROOT_FOLDER_ID, OPENAI_API_KEY,
+# CF_ACCESS_TEAM_DOMAIN, CF_ACCESS_AUD_TAG, GOOGLE_IMPERSONATION_EMAIL (optional),
+# WEBHOOK_URL/WEBHOOK_TYPE, PERFORMANCE_THRESHOLD
 
 [observability]
 enabled = true

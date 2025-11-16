@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { ADMIN_TOKEN_STORAGE_KEY } from '../config/constants';
 
 /**
  * Trace:
@@ -15,49 +14,17 @@ interface ActionButtonsProps {
 export function ActionButtons({ onRefresh, isSyncing }: ActionButtonsProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showTokenModal, setShowTokenModal] = useState(false);
-  const [tokenInput, setTokenInput] = useState('');
-
-  const openTokenModal = () => {
-    setTokenInput('');
-    setShowTokenModal(true);
-  };
-
-  const closeTokenModal = () => {
-    setShowTokenModal(false);
-    setTokenInput('');
-  };
-
-  const handleTokenSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const token = tokenInput.trim();
-
-    if (!token) {
-      setMessage('Manual sync cancelled');
-      closeTokenModal();
-      return;
-    }
-
-    sessionStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, token);
-    closeTokenModal();
-    await executeManualSync(token);
-  };
-
-  const executeManualSync = async (token: string) => {
+  const executeManualSync = async () => {
     setIsSubmitting(true);
     setMessage(null);
 
     try {
       const response = await fetch('/admin/resync', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
       if (response.status === 401) {
-        sessionStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
-        throw new Error('Authentication failed. Token has been cleared. Please try again.');
+        throw new Error('Authentication failed. Please sign in via Cloudflare Access.');
       }
 
       if (!response.ok) {
@@ -79,14 +46,7 @@ export function ActionButtons({ onRefresh, isSyncing }: ActionButtonsProps) {
       return;
     }
 
-    const token = sessionStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
-
-    if (!token) {
-      openTokenModal();
-      return;
-    }
-
-    await executeManualSync(token);
+    await executeManualSync();
   };
 
   const refreshNow = async () => {
@@ -114,40 +74,6 @@ export function ActionButtons({ onRefresh, isSyncing }: ActionButtonsProps) {
       {message && (
         <div role="status" className="alert alert-info text-sm">
           {message}
-        </div>
-      )}
-
-      {/* Token Input Modal */}
-      {showTokenModal && (
-        <div className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg mb-4">Admin Token Required</h3>
-            <form onSubmit={handleTokenSubmit}>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Enter your admin token to trigger a manual sync</span>
-                </label>
-                <input
-                  type="password"
-                  className="input input-bordered w-full"
-                  placeholder="Admin token"
-                  value={tokenInput}
-                  onChange={e => setTokenInput(e.target.value)}
-                  autoFocus
-                  data-testid="token-input"
-                />
-              </div>
-              <div className="modal-action">
-                <button type="button" className="btn btn-ghost" onClick={closeTokenModal}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Submit
-                </button>
-              </div>
-            </form>
-          </div>
-          <div className="modal-backdrop" onClick={closeTokenModal} />
         </div>
       )}
     </div>
