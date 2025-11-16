@@ -47,6 +47,20 @@
 
 ## Recent Accomplishments
 
+### 2025-11-16: CF_Authorization Cookie Hardening (TASK-037) ✅
+
+**Achievement**: Ensured Cloudflare Access JWT extraction from cookies doesn't truncate tokens containing '=' characters by slicing after the known prefix.
+
+**Testing**:
+- `npm exec vitest run src/auth/zt-validator.test.ts` (added regression test for cookie parsing)
+
+### 2025-11-16: JWKS Typing Tightening (TASK-038) ✅
+
+**Achievement**: Replaced loose JWKS typing with jose `JSONWebKeySet`, removing the `as any` cast when creating local JWK sets in the Access validator.
+
+**Testing**:
+- `npm exec vitest run src/auth/zt-validator.test.ts`
+
 ### 2025-11-15: Dashboard UI Foundations (TASK-030) ✅
 
 **Achievement**: Delivered fully interactive React dashboard (SPEC-web-dashboard-1) with live sync stats, charts, and manual controls embedded in `/frontend`.

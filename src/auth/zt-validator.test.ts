@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { SignJWT, exportJWK, generateKeyPair } from 'jose';
+import { SignJWT, exportJWK, generateKeyPair, JSONWebKeySet } from 'jose';
 
-type JWKS = { keys: unknown[] };
-import { requireAccessJwt, AccessUnauthorizedError, clearAccessJwksCache } from './zt-validator.js';
+type JWKS = JSONWebKeySet;
+import { requireAccessJwt, AccessUnauthorizedError, clearAccessJwksCache, extractAccessToken } from './zt-validator.js';
 
 const TEAM_DOMAIN = 'kadragon.cloudflareaccess.com';
 const ISSUER = `https://${TEAM_DOMAIN}`;
@@ -69,5 +69,18 @@ describe('requireAccessJwt', () => {
     }, { jwks });
 
     expect(payload.sub).toBe('user@example.com');
+  });
+
+  it('parses token from cookie without truncating values containing =', async () => {
+    const tokenWithEquals = 'eyJhbGciOiJIUzI1NiJ9.abc=def.signature=';
+    const request = new Request('https://example.com/admin/status', {
+      headers: {
+        Cookie: `other=1; CF_Authorization=${tokenWithEquals}; theme=dark`,
+      },
+    });
+
+    const extracted = extractAccessToken(request);
+
+    expect(extracted).toBe(tokenWithEquals);
   });
 });

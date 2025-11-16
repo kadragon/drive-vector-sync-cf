@@ -6,9 +6,15 @@
  *   task_id: TASK-035
  */
 
-import { createRemoteJWKSet, createLocalJWKSet, jwtVerify, JWTPayload } from 'jose';
+import {
+  createRemoteJWKSet,
+  createLocalJWKSet,
+  jwtVerify,
+  JWTPayload,
+  JSONWebKeySet,
+} from 'jose';
 
-type JWKS = { keys: unknown[] };
+type JWKS = JSONWebKeySet;
 
 interface AccessValidationEnv {
   CF_ACCESS_TEAM_DOMAIN: string;
@@ -34,7 +40,7 @@ function getJwks(teamDomain: string) {
   return jwksCache.get(teamDomain)!;
 }
 
-function extractAccessToken(request: Request): string | null {
+export function extractAccessToken(request: Request): string | null {
   const header = request.headers.get('CF_Authorization') || request.headers.get('Cf-Authorization');
   if (header) {
     return header.trim();
@@ -43,12 +49,13 @@ function extractAccessToken(request: Request): string | null {
   // Fallback to cookie (browser Access sessions embed the token in CF_Authorization cookie)
   const cookie = request.headers.get('Cookie');
   if (cookie) {
+    const prefix = 'CF_Authorization=';
     const match = cookie
       .split(';')
       .map(part => part.trim())
-      .find(part => part.startsWith('CF_Authorization='));
+      .find(part => part.startsWith(prefix));
     if (match) {
-      return match.split('=')[1];
+      return match.substring(prefix.length);
     }
   }
   return null;
@@ -76,7 +83,7 @@ export async function requireAccessJwt(
   const audience = env.CF_ACCESS_AUD_TAG;
 
   const jwks = options?.jwks
-    ? createLocalJWKSet(options.jwks as any)
+    ? createLocalJWKSet(options.jwks)
     : getJwks(env.CF_ACCESS_TEAM_DOMAIN);
 
   try {
