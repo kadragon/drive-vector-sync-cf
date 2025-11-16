@@ -412,6 +412,42 @@ describe('AdminHandler', () => {
       expect(data.filesProcessed).toBe(250);
       expect(data.errorCount).toBe(7);
     });
+
+    it('should skip Drive file counting by default for performance', async () => {
+      const request = new Request('http://localhost/admin/status', {
+        method: 'GET',
+      });
+
+      const spy = vi.spyOn(driveClient, 'getTotalFileCount');
+
+      const response = await handler.handleRequest(request);
+      const data = (await response.json()) as AdminStatusResponse & {
+        totalFilesInDrive: number | null;
+      };
+
+      expect(response.status).toBe(200);
+      expect(spy).not.toHaveBeenCalled();
+      expect(data.totalFilesInDrive).toBeNull();
+    });
+
+    it('should include Drive file count when explicitly requested', async () => {
+      driveClient.setTotalFileCount(1234);
+
+      const request = new Request('http://localhost/admin/status?includeTotals=true', {
+        method: 'GET',
+      });
+
+      const spy = vi.spyOn(driveClient, 'getTotalFileCount');
+
+      const response = await handler.handleRequest(request);
+      const data = (await response.json()) as AdminStatusResponse & {
+        totalFilesInDrive: number | null;
+      };
+
+      expect(response.status).toBe(200);
+      expect(spy).toHaveBeenCalledWith(rootFolderId);
+      expect(data.totalFilesInDrive).toBe(1234);
+    });
   });
 
   describe('GET /admin/stats', () => {

@@ -11,6 +11,10 @@ given_when_then:
     when: "GET /admin/status with valid token"
     then: "System should return last sync time, files processed, and error count"
 
+  - given: "Admin requests sync status with includeTotals flag"
+    when: "GET /admin/status?includeTotals=true"
+    then: "System should additionally return totalFilesInDrive while keeping the default fast response lightweight"
+
   - given: "Invalid or missing admin token"
     when: "Request to admin endpoint"
     then: "System should return 401 Unauthorized"
@@ -25,6 +29,9 @@ acceptance_tests:
 
   - id: TEST-admin-api-2
     desc: "Fetch sync status via GET /admin/status"
+
+  - id: TEST-admin-api-6
+    desc: "Fetch total file count only when includeTotals=true to avoid unnecessary CPU usage"
 
   - id: TEST-admin-api-3
     desc: "Reject requests with invalid admin token"

@@ -622,6 +622,10 @@ GET /admin/status
 
 Returns the state of the last sync operation.
 
+By default the response omits an expensive Google Drive file count to keep the endpoint fast. If you
+need the total number of indexed files, append `?includeTotals=true` (may take longer and use more
+CPU).
+
 **Response 200:**
 
 ```json

@@ -2,3 +2,25 @@
 # Only one task should be active at a time
 
 current_task: null
+
+current_task:
+  task_id: TASK-021
+  spec_id: SPEC-deployment-1
+  title: "Production deployment"
+  priority: 1
+  status: in_progress
+  dependencies: []
+  estimated_effort: 1.5 hours
+  description: |
+    Resume production verification now that auth is live: validate /admin/status and
+    /admin/resync with real auth, and observe scheduled cron at 17:00 UTC.
+  test_refs:
+    - TEST-deployment-1
+    - TEST-deployment-2
+    - TEST-deployment-3
+    - TEST-deployment-4
+  notes: |
+    Continuing deployment validation; user reported 503 from /admin/status.
+    Investigated via wrangler tail: repeated CPU limit exceeded on GET /admin/status.
+    Implemented optional Drive file count fetch (disabled by default) to avoid heavy call.
+    Pending deployment to production for verification.
