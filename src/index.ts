@@ -20,6 +20,7 @@ import { requireAccessJwt, unauthorizedResponse } from './auth/zt-validator.js';
 import { logError } from './errors/index.js';
 import { resolveAssetPath, serveStaticAsset } from './static/server.js';
 import { createOpenAIClient } from './openai/openai-factory.js';
+import { buildCorsHeaders } from './utils/cors.js';
 import type { VectorizeIndex } from './types/vectorize.js';
 
 export interface Env {
@@ -61,7 +62,7 @@ export type { VectorizeIndex };
 /**
  * Initialize all clients and orchestrator
  */
-function initializeServices(env: Env) {
+function initializeServices(env: Env, request: Request) {
   // Initialize Drive client with Service Account
   const driveClient = DriveClient.fromJSON(
     env.GOOGLE_SERVICE_ACCOUNT_JSON,
@@ -111,7 +112,8 @@ function initializeServices(env: Env) {
     orchestrator,
     stateManager,
     vectorClient,
-    env.GOOGLE_ROOT_FOLDER_ID
+    env.GOOGLE_ROOT_FOLDER_ID,
+    request
   );
 
   return {
@@ -131,7 +133,9 @@ export default {
   async scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
     console.log('Scheduled sync triggered at:', new Date(event.scheduledTime).toISOString());
 
-    const { orchestrator, stateManager } = initializeServices(env);
+    // Scheduled tasks don't have a request, so we create a dummy one for service initialization
+    const dummyRequest = new Request('http://localhost');
+    const { orchestrator, stateManager } = initializeServices(env, dummyRequest);
 
     try {
       // 1. Check for concurrent execution
@@ -163,13 +167,8 @@ export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
-    // CORS headers for all responses
-    const corsHeaders = {
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, CF-Authorization, Cf-Authorization',
-    };
+    // CORS headers for all responses (reflects request origin when present)
+    const corsHeaders = buildCorsHeaders(request);
 
     // Handle CORS preflight requests
     if (request.method === 'OPTIONS') {
@@ -200,11 +199,11 @@ export default {
       try {
         await requireAccessJwt(request, env);
       } catch (error) {
-        return unauthorizedResponse((error as Error).message);
+        return unauthorizedResponse((error as Error).message, request);
       }
 
       // Handle admin API requests
-      const { adminHandler } = initializeServices(env);
+      const { adminHandler } = initializeServices(env, request);
       return await adminHandler.handleRequest(request);
     }
 

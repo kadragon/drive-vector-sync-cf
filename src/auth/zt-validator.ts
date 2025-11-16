@@ -7,6 +7,7 @@
  */
 
 import { createRemoteJWKSet, createLocalJWKSet, jwtVerify, JWTPayload, JSONWebKeySet } from 'jose';
+import { buildCorsHeaders } from '../utils/cors.js';
 
 type JWKS = JSONWebKeySet;
 
@@ -91,15 +92,12 @@ export async function requireAccessJwt(
   }
 }
 
-export function unauthorizedResponse(message: string): Response {
+export function unauthorizedResponse(message: string, request: Request): Response {
   return new Response(JSON.stringify({ error: 'Unauthorized', message }), {
     status: 401,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, CF-Authorization, Cf-Authorization',
+      ...buildCorsHeaders(request),
     },
   });
 }

@@ -158,11 +158,15 @@ describe('AdminHandler', () => {
     stateManager = new MockKVStateManager();
     vectorClient = new MockVectorClient();
 
+    // Create a dummy request for AdminHandler constructor
+    const dummyRequest = new Request('http://localhost');
+
     handler = new AdminHandler(
       orchestrator as unknown as SyncOrchestrator,
       stateManager as unknown as KVStateManager,
       vectorClient as unknown as VectorStoreClient,
-      rootFolderId
+      rootFolderId,
+      dummyRequest
     );
   });
 
