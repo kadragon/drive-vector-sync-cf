@@ -2,18 +2,19 @@ name = "worknote-maker-cf"
 main = "src/index.ts"
 compatibility_date = "2024-11-13"
 compatibility_flags = ["nodejs_compat"]
+smart_placement = true
 
 # KV Namespace for state persistence
 [[kv_namespaces]]
 binding = "WORKNOTE_SYNC_STATE"
 id = "49ef47530b4d42aaa54be79c584a18e6"
-preview_id = "25a372d46cde40ae94ee1c64b00a0fb2"
+preview_id = "PLACEHOLDER_PREVIEW_KV_ID"
 
 # KV Namespace for file-to-vector ID mapping (Vectorize migration)
 [[kv_namespaces]]
 binding = "WORKNOTE_FILE_VECTOR_INDEX"
 id = "8a9adb1a58f24e089c2c8ff8a67c87a5"
-preview_id = "b8133f510a91413eadc5354569d6cace"
+preview_id = "PLACEHOLDER_FILE_INDEX_PREVIEW_ID"
 
 # Cloudflare Vectorize binding (replaces Qdrant)
 [[vectorize]]
@@ -44,3 +45,7 @@ MAX_BATCH_SIZE = "32"
 MAX_CONCURRENCY = "4"
 MAX_RETRIES = "3"
 INDEX_NAME = "worknote-store"
+
+[observability]
+enabled = true
+head_sampling_rate = 1

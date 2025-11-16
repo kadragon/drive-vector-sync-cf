@@ -18,11 +18,29 @@ export interface ChunkResult {
 /**
  * Approximate token counting
  * Uses ~4 characters per token heuristic (typical for GPT models)
+ * Memory-efficient: iterates without creating new strings
  */
 function approximateTokenCount(text: string): number {
-  // Count characters, excluding whitespace for better approximation
-  const chars = text.replace(/\s+/g, ' ').length;
-  return Math.ceil(chars / 4);
+  let charCount = 0;
+  let inWhitespace = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const isSpace = char === ' ' || char === '\n' || char === '\r' || char === '\t';
+
+    if (isSpace) {
+      // Count consecutive whitespace as single space
+      if (!inWhitespace) {
+        charCount++;
+        inWhitespace = true;
+      }
+    } else {
+      charCount++;
+      inWhitespace = false;
+    }
+  }
+
+  return Math.ceil(charCount / 4);
 }
 
 /**
@@ -52,7 +70,8 @@ export function chunkText(
   const approximateTokens = approximateTokenCount(text);
 
   // If text is within limit, return single chunk
-  if (approximateTokens <= maxTokens) {
+  // Additional safety: also check raw length to prevent whitespace-heavy inputs from bypassing limits
+  if (approximateTokens <= maxTokens && text.length <= maxTokens * 4) {
     return [
       {
         text,
@@ -80,11 +99,6 @@ export function chunkText(
       index: chunks.length,
       tokenCount: approximateTokenCount(chunkText),
     });
-
-    // If we've covered all text, break
-    if (end >= textLength) {
-      break;
-    }
   }
 
   return chunks;

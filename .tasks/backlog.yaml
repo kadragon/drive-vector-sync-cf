@@ -2,6 +2,44 @@
 # Remaining pending tasks sorted by priority
 
 tasks:
+  - task_id: TASK-034
+    spec_id: SPEC-embedding-pipeline-1
+    title: "Integrate Cloudflare AI Gateway for OpenAI Calls"
+    priority: 2
+    status: pending
+    dependencies: []
+    estimated_effort: 2 hours
+    description: |
+      Modify the application to route OpenAI API calls through Cloudflare's AI Gateway for improved caching, rate limiting, and analytics.
+
+      **Plan:**
+
+      1.  **Cloudflare Configuration (Manual):**
+          - The user must create an AI Gateway in the Cloudflare dashboard to get a unique endpoint URL.
+
+      2.  **Add New Secret:**
+          - The AI Gateway endpoint URL must be stored as a new secret named `AI_GATEWAY_URL` in the worker's environment.
+
+      3.  **Code Implementation:**
+          - **`src/embedding/embedding-client.ts`**:
+            - Add an optional `baseURL?: string` property to the `EmbeddingConfig` interface.
+            - In the `EmbeddingClient` constructor, pass the `baseURL` to the `OpenAI` client if it is provided.
+          - **`src/index.ts` (or relevant service initiator):**
+            - Read the `AI_GATEWAY_URL` secret from the environment bindings.
+            - When instantiating `EmbeddingClient`, pass the `AI_GATEWAY_URL` value as the `baseURL`.
+            - Ensure fallback to the default OpenAI endpoint if the secret is not set.
+
+      4.  **Documentation:**
+          - Update `README.md` and the comments in `wrangler.toml` to document the new, optional `AI_GATEWAY_URL` secret.
+    test_refs:
+      - "Create a new test to verify the OpenAI client is initialized with the correct baseURL when the AI_GATEWAY_URL is set."
+    notes: |
+      **Benefits:**
+      - **Caching:** Reduces costs and latency for repeated queries.
+      - **Rate Limiting:** Protects the OpenAI API key and manages costs.
+      - **Analytics:** Provides insights into API usage and performance.
+      - **Security:** Centralizes API key management and access control.
+
   - task_id: TASK-033
     spec_id: null
     title: "Refactor folder structure: rename src/ to worker/"

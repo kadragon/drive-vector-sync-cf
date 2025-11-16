@@ -40,6 +40,7 @@
     "@types/node": "24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.17.0",
     "@typescript-eslint/parser": "^8.17.0",
+    "@vitest/coverage-v8": "^4.0.9",
     "eslint": "^9.15.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.6",
