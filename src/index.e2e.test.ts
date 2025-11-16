@@ -67,10 +67,11 @@ vi.mock('./auth/zt-validator.js', () => {
       }
       return {};
     }),
-    unauthorizedResponse: (message: string) => new Response(JSON.stringify({ error: 'Unauthorized', message }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    }),
+    unauthorizedResponse: (message: string) =>
+      new Response(JSON.stringify({ error: 'Unauthorized', message }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      }),
   };
 });
 
@@ -274,7 +275,7 @@ describe('E2E Integration Tests', () => {
 
         expect(response.status).toBe(401);
         const data = await response.json();
-        expect(data).toEqual({ error: 'Unauthorized' });
+        expect(data).toEqual({ error: 'Unauthorized', message: 'Missing CF_Authorization token' });
       });
 
       it('should reject requests with invalid token', async () => {
