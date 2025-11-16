@@ -15,12 +15,15 @@ import './App.css';
 /**
  * Trace:
  *   spec_id: SPEC-web-dashboard-1
- *   task_id: TASK-030
+ *   task_id:
+ *     - TASK-030
+ *     - TASK-039
  *   test_refs:
  *     - TEST-web-dashboard-2
  *     - TEST-web-dashboard-3
  *     - TEST-web-dashboard-5
  *     - TEST-web-dashboard-6
+ *     - TEST-web-dashboard-7
  */
 
 function App() {
@@ -78,7 +81,7 @@ function App() {
     <div className="min-h-screen bg-base-200">
       <div className="navbar bg-base-100 shadow-lg">
         <div className="flex-1">
-          <span className="btn btn-ghost text-xl">Drive Vector Sync Dashboard</span>
+          <span className="btn btn-ghost text-xl">업무노트 관리 대시보드</span>
         </div>
         <div className="flex-none">
           <label className="swap swap-rotate btn btn-ghost btn-circle" title="Toggle theme">
